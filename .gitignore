@@ -1,0 +1,46 @@
+# --- Secrets: never commit these -----------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+service-account*.json
+
+# --- Python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Project data ---------------------------------------------------------
+# Source documents are fetched by script, not stored in git: their licences
+# differ (see SOURCES.md) and some must not be redistributed.
+data/raw/
+data/cache/
+# Built indexes and embeddings are rebuilt by script
+data/indexes/
+*.faiss
+*.npy
+
+# Experiment outputs (the findings go in docs/, the raw runs stay local)
+reports/
+runs/
+
+# --- Notebooks / editors / OS ---------------------------------------------
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Private planning documents: never commit ---------------------------
+*Roadmap*.pdf
+private/

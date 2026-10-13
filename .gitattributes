@@ -1,0 +1,9 @@
+# Normalise line endings so Windows and Linux (CI) agree
+* text=auto
+
+# Binary files git should never try to diff or convert
+*.pdf binary
+*.png binary
+*.jpg binary
+*.npy binary
+*.parquet binary
