@@ -29,7 +29,7 @@ Regulator guidance, case law and adjacent laws come in later tiers. See [SOURCES
 
 | Phase | What |
 |---|---|
-| 0. Sources and licences | Confirm what may be reused and how (half done) |
+| 0. Sources and licences | Confirm what may be reused and how, and which versions exist. Licences, document manifest and fetch rules are done; technology decisions (models, cloud) are pending |
 | 1. Ingestion and chunking | Polite fetchers; chunks by legal structure with citation and as-of-date metadata |
 | 2. Gold question set | 60 to 100 bilingual questions with the correct articles, frozen before any experiment |
 | 3. Retrieval experiments | Keyword, embeddings and hybrid; chunking; embedding models; reranking; filters; vector store comparison. Pre-registered, judged by hit@k, recall@k, MRR and nDCG with bootstrap intervals |
