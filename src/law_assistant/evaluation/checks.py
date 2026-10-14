@@ -195,36 +195,31 @@ class Corpus:
         return texts
 
 
+def provision_problems(label: str, g: GoldProvision, corpus: Corpus) -> list[str]:
+    """Problems with one cited provision: its unit, pinpoint ids and quotes must exist (spacing ignored)."""
+    where = f"{g.instrument} {g.unit} {'/'.join(g.unit_path)}"
+    if g.instrument not in corpus.instruments():
+        return [f"{label}: instrument {g.instrument} is not in the corpus"]
+    docs = corpus.documents(g)
+    if not docs:
+        return [f"{label}: no document of {g.instrument} for version {g.version} language {g.language}"]
+    members = [m for doc in docs for m in corpus.unit_members(doc, g)]
+    if not members:
+        return [f"{label}: unit {where} not found"]
+    ids = {m.id for m in members}
+    texts = corpus.unit_texts(g)
+    problems = [f"{label}: pinpoint {pid} not found in {where}" for pid in g.pinpoints if pid not in ids]
+    problems += [
+        f"{label}: quote {quote!r} not found in {where}"
+        for quote in g.quotes
+        if not any(_norm(quote) in text for text in texts)
+    ]
+    return problems
+
+
 def check_against_corpus(questions: Sequence[GoldQuestion], corpus: Corpus) -> list[str]:
     """Every gold provision must exist: its unit, its pinpoint ids and its quotes (whitespace ignored)."""
-    problems: list[str] = []
-    for q in questions:
-        for g in q.gold:
-            where = f"{g.instrument} {g.unit} {'/'.join(g.unit_path)}"
-            if g.instrument not in corpus.instruments():
-                problems.append(f"{q.id}: instrument {g.instrument} is not in the corpus")
-                continue
-            docs = corpus.documents(g)
-            if not docs:
-                problems.append(
-                    f"{q.id}: no document of {g.instrument} for version {g.version} language {g.language}"
-                )
-                continue
-            members = [m for doc in docs for m in corpus.unit_members(doc, g)]
-            if not members:
-                problems.append(f"{q.id}: unit {where} not found")
-                continue
-            ids = {m.id for m in members}
-            problems += [
-                f"{q.id}: pinpoint {pid} not found in {where}" for pid in g.pinpoints if pid not in ids
-            ]
-            texts = corpus.unit_texts(g)
-            problems += [
-                f"{q.id}: quote {quote!r} not found in {where}"
-                for quote in g.quotes
-                if not any(_norm(quote) in text for text in texts)
-            ]
-    return problems
+    return [p for q in questions for g in q.gold for p in provision_problems(q.id, g, corpus)]
 
 
 def overlap_warnings(questions: Sequence[GoldQuestion], corpus: Corpus, threshold: float = 0.6) -> list[str]:

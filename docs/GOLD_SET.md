@@ -81,4 +81,4 @@ All 80 now pass the checks and match the plan exactly (16 lookups, 8 definitions
 
 ## Status
 
-Steps 2.0 (schema and checks) and 2.1 (drafting) are done: 80 of 80 questions written, checked against the corpus and against the plan, and guarded by tests (`tests/test_gold_set.py`, `tests/test_gold_real.py`). Pending Kevin's review (accept, change or drop each). Next: 2.3 the structured table (the table keys are named in the numeric questions; q077 needs a second key for the UK figure), 2.4 the metrics module, 2.5 the split and freeze.
+Steps 2.0 (schema and checks), 2.1 (drafting) and 2.3 (the structured table, see `docs/FACTS.md`) are done: 80 of 80 questions written, checked against the corpus and the plan, and guarded by tests; the eight numeric questions have their facts and their expected answers agree with them. Pending Kevin's review (accept, change or drop each). Next: 2.4 the metrics module, 2.5 the split and freeze.
