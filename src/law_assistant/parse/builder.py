@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from law_assistant.model import Provision
 
-_PREFIX = {"recital": "rct", "article": "art", "annex": "anx"}
+_PREFIX = {"recital": "rct", "article": "art", "section": "sec", "annex": "anx", "schedule": "sch"}
 
 
 class ProvisionBuilder:
@@ -32,6 +32,7 @@ class ProvisionBuilder:
         text: str,
         heading: str | None,
         chapter: str | None,
+        in_force_from: str | None = None,
     ) -> None:
         base = f"{self.instrument}/{_PREFIX[unit]}-" + "/".join(path)
         if kind == "closing":
@@ -53,5 +54,6 @@ class ProvisionBuilder:
                 heading=heading,
                 chapter=chapter,
                 source_key=self.source_key,
+                in_force_from=in_force_from,
             )
         )

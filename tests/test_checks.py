@@ -132,3 +132,39 @@ def test_inserted_labels_match_across_languages_when_compared_with_normalising_o
         compare_skeletons([prov("eu-test/art-3/14b", ["3", "14b"])], ter, normalise_inserted_labels=True)
         == []
     )
+
+
+def test_section_numbering_is_checked_like_article_numbering_and_known_gaps_are_allowed():
+    doc = [
+        prov("uk-test/sec-1", ["1"], unit="section", kind="article"),
+        prov("uk-test/sec-3", ["3"], unit="section", kind="article"),
+        prov("uk-test/sec-3A", ["3A"], unit="section", kind="article"),
+    ]
+    assert any("section numbering has gaps" in p and "[2]" in p for p in check_structure(doc))
+    assert check_structure(doc, allowed_gaps=[2]) == []
+    assert any(
+        "expected 4 sections, found 2" in p
+        for p in check_structure(doc, expected_sections=4, allowed_gaps=[2])
+    )
+
+
+def test_schedules_can_be_counted_and_a_lettered_article_needs_its_base_article():
+    doc = [
+        prov("uk-test/art-1", ["1"], kind="article"),
+        prov("uk-test/art-1A", ["1A"], kind="article"),
+        prov("uk-test/art-5A", ["5A"], kind="article"),
+        prov("uk-test/sch-1", ["1"], unit="schedule", kind="annex"),
+    ]
+    problems = check_structure(doc, expected_schedules=2)
+    assert any("expected 2 schedules, found 1" in p for p in problems)
+    assert any("article 5A has no article 5" in p for p in problems)
+    assert not any("article 1A" in p for p in problems)
+
+
+def test_headings_are_counted_once_per_distinct_title_so_schedule_paragraphs_each_count():
+    doc = [
+        prov("uk-test/sch-1/1", ["1", "1"], text="aaaa", unit="schedule", heading="Alpha"),
+        prov("uk-test/sch-1/2", ["1", "2"], text="bbbb", unit="schedule", heading="Beta"),
+    ]
+    # text 8 + labels "1","2" 2 + headings "Alpha" 5 + "Beta" 4 + unit words "Schedule1" 9 (once per schedule)
+    assert coverage_ratio(doc, source_characters=28, unit_words={"schedule": "Schedule"}) == 1.0

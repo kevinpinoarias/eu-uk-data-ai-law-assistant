@@ -1,4 +1,4 @@
-# Parsing the EU texts (Official Journal and consolidated)
+# Parsing the EU and UK texts
 
 How the downloaded XHTML becomes `Provision` records, how it is checked, and what the checks found. The code is in `src/law_assistant/parse/` (`eu_oj.py` for the Official Journal texts, `eu_consolidated.py` for the consolidated texts); run everything with `python -m law_assistant.parse.run_eu`.
 
@@ -67,4 +67,31 @@ Each consolidated parse is compared with the Official Journal parse id by id, ig
 10. **The Spanish consolidated Article 4** lays definitions out as `dlist-term | dlist-definition` tables with "a)" lines, a third layout after the two in the Official Journal text.
 11. **Annex sections** ("Section A", "3. Quality management system") and dotted numbering ("3.1.") appear as plain paragraphs and divs.
 12. **Inserted provisions** are numbered 14a in English and "14 bis" in Spanish.
+
+## The UK texts (15 October 2026)
+
+`uk.py` reads the three legislation.gov.uk XML files; run them with `python -m law_assistant.parse.run_uk`. The XML is the richest source: ids are already citations and elements say from when they apply.
+
+| Text | Provisions | Numbered units | Schedules or annexes | Left out | Coverage |
+|---|---|---|---|---|---|
+| UK GDPR | 1,169 (173 recitals) | 80 articles + 21 inserted | 2 annexes | 19 repealed (Articles 60 to 76, 92, 93) | 100.00% |
+| Data Protection Act 2018 | 6,917 | 215 sections + 46 inserted | 21 schedules | 3 repealed, 2 not yet in force | 99.96% |
+| Data (Use and Access) Act 2025 | 2,430 | 134 sections | 15 schedules | 12 not yet in force (sections 45 to 48, 60 to 62, 64, 65, 131) | 99.98% |
+
+The missing article and section numbers are exactly the repealed or not-yet-in-force ones: the checks allow no other gap. The version label is `revised-YYYYMMDD`, the retrieval date, because the site serves the latest text.
+
+### Cross-checks with outside facts
+
+- **Dates agree with the government's commencement table.** `in_force_from` for UK GDPR Article 17(1)(g) is 31 March 2026, for section 103 of the new Act 19 June 2026 and for section 1 20 August 2025, which are the dates in the gov.uk commencement plan.
+- **UK GDPR against the EU text.** Of 534 article-level ids both texts share, 289 have identical wording and 245 differ; Article 5(1)(a) is word for word the same, Article 6(1)(ea) (recognised legitimate interests) exists only in the UK text, and Chapter VII (Articles 60 to 76) exists only in the EU text.
+- **The new Act's missing sections** equal the not-yet-in-force ones, as above.
+
+### What the checks found in the UK markup
+
+13. **Three document shapes:** the UK GDPR is retained EU text (preamble, chapters, `EUBody`), the other two are Acts (parts, cross-headings, schedules).
+14. **Amendment markup** (`Addition`, `Substitution`) wraps the current wording and is kept; commentary and footnote markers are not text.
+15. **Quoted amendments to other texts** (`BlockAmendment`: 339 in the Data Protection Act, 290 in the new Act) have no citation ids; each is kept as one closing text of its paragraph.
+16. **Four recitals** (19, 50, 71, 143) put their first sentences in a `Title` element; coverage showed 4.3% of the recital text missing until it was read.
+17. **A table beside the paragraph** (section 206, the index of defined expressions) is a sibling of the paragraph, not inside it; one closing line per row.
+18. **Schedule paragraphs outside a heading group** have no title of their own; their cross-heading is kept in the `chapter` field.
 

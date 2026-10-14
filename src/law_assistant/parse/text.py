@@ -24,6 +24,7 @@ def text_of(
     element: ET.Element,
     *,
     skip: Callable[[ET.Element], bool] = lambda e: False,
+    block_tags: frozenset[str] = BLOCK_TAGS,
 ) -> str:
     """All the text under `element`, cleaned. Children for which `skip` is true are left out (tail kept)."""
     parts: list[str] = []
@@ -32,7 +33,7 @@ def text_of(
         parts.append(node.text or "")
         for child in node:
             if not skip(child):
-                block = local(child) in BLOCK_TAGS
+                block = local(child) in block_tags
                 parts.append(" " if block else "")  # paragraphs, cells and rows never run into each other
                 walk(child)
                 parts.append(" " if block else "")

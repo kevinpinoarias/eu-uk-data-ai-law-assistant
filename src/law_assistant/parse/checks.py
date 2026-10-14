@@ -27,11 +27,18 @@ def check_structure(
     provisions: Sequence[Provision],
     *,
     expected_articles: int | None = None,
+    expected_sections: int | None = None,
     expected_recitals: int | None = None,
     expected_annexes: int | None = None,
+    expected_schedules: int | None = None,
+    allowed_gaps: Iterable[int] = (),
 ) -> list[str]:
-    """Return a list of problems; an empty list means the document passes."""
+    """Return a list of problems; an empty list means the document passes.
+
+    `allowed_gaps` are article or section numbers known to be absent (repealed, or not yet in force).
+    """
     problems: list[str] = []
+    allowed = set(allowed_gaps)
 
     seen: set[str] = set()
     for p in provisions:
@@ -48,15 +55,23 @@ def check_structure(
             if not has_child:
                 problems.append(f"empty text: {p.id}")
 
-    articles, recitals = _numbers(provisions, "article"), _numbers(provisions, "recital")
-    if _gaps(articles):
-        problems.append(f"article numbering has gaps: {_gaps(articles)}")
-    if _gaps(recitals):
-        problems.append(f"recital numbering has gaps: {_gaps(recitals)}")
+    numbered = {unit: _numbers(provisions, unit) for unit in ("article", "section", "recital")}
+    for unit, numbers in numbered.items():
+        gaps = [n for n in _gaps(numbers) if n not in allowed]
+        if gaps:
+            problems.append(f"{unit} numbering has gaps: {gaps}")
+    for unit in ("article", "section"):  # an inserted "5A" needs a "5" (or a known absence)
+        labels = {p.path[0] for p in provisions if p.unit == unit}
+        for label in sorted(labels):
+            base = re.match(r"\d+", label)
+            if base and not label.isdigit() and int(base.group()) not in set(numbered[unit]) | allowed:
+                problems.append(f"{unit} {label} has no {unit} {base.group()}")
     for name, found, expected in (
-        ("articles", len(articles), expected_articles),
-        ("recitals", len(recitals), expected_recitals),
+        ("articles", len(numbered["article"]), expected_articles),
+        ("sections", len(numbered["section"]), expected_sections),
+        ("recitals", len(numbered["recital"]), expected_recitals),
         ("annexes", len({p.path[0] for p in provisions if p.unit == "annex"}), expected_annexes),
+        ("schedules", len({p.path[0] for p in provisions if p.unit == "schedule"}), expected_schedules),
     ):
         if expected is not None and found != expected:
             problems.append(f"expected {expected} {name}, found {found}")
@@ -139,7 +154,8 @@ def coverage_ratio(
     words = _DEFAULT_UNIT_WORDS if unit_words is None else unit_words
     kept = sum(size(p.text) for p in provisions)
     kept += sum(size(p.path[-1]) for p in provisions if p.kind in ("point", "paragraph", "recital"))
-    units = {(p.unit, p.path[0]): p for p in provisions if p.unit in ("article", "annex")}
-    kept += sum(size(p.heading or "") for p in units.values())
+    units = {(p.unit, p.path[0]) for p in provisions if p.unit in ("article", "section", "annex", "schedule")}
+    headings = {(p.unit, p.path[0], p.heading) for p in provisions if p.heading and p.unit != "recital"}
+    kept += sum(size(heading) for _, _, heading in headings)
     kept += sum(size(words.get(unit, "") + number) for unit, number in units)
     return kept / source_characters
