@@ -25,6 +25,7 @@ htmlcov/
 # differ (see SOURCES.md) and some must not be redistributed.
 data/raw/
 data/parsed/
+data/chunks/
 data/cache/
 # Built indexes and embeddings are rebuilt by script
 data/indexes/
