@@ -50,7 +50,8 @@ def provision(parsed, key, id_):
 def test_known_totals_and_structure_hold_with_the_skipped_numbers_as_the_only_gaps(parsed, key):
     spec = next(s for s in SPECS if s.key == key)
     provisions, skipped, _ = parsed[key]
-    assert check_structure(provisions, **spec.expected, allowed_gaps=skipped["numbers"]) == []
+    known = [*skipped["numbers"], *skipped["omitted_numbers"]]
+    assert check_structure(provisions, **spec.expected, allowed_gaps=known) == []
 
 
 @pytest.mark.parametrize("key", KEYS)
@@ -114,3 +115,18 @@ def test_a_section_that_is_a_table_keeps_its_rows(parsed):
     assert p.text.startswith("The Table below lists provisions which define or otherwise explain terms")
     rows = [q for q in parsed["uk-dpa-2018"][0] if q.id.startswith("uk-dpa-2018/sec-206~closing")]
     assert len(rows) > 10 and all(" | " in r.text for r in rows)
+
+
+@pytest.mark.parametrize("key", KEYS)
+def test_no_provision_is_just_a_line_of_dots(parsed, key):
+    """The law shows an omitted provision as '. . . .'; those are left out and counted, not kept as text."""
+    provisions, skipped, _ = parsed[key]
+    assert not any(p.text.strip() and set(p.text) <= {" ", "."} for p in provisions)
+    assert skipped["omitted"] == (0 if key == "uk-duaa-2025" else skipped["omitted"])
+
+
+def test_the_omitted_numbers_explain_the_gaps_that_the_older_counts_could_not(parsed):
+    gdpr, skipped, _ = parsed["uk-gdpr"]
+    assert skipped["omitted_numbers"][:3] == [22, 44, 45] and skipped["omitted"] == 77
+    assert not any(p.unit == "article" and p.path[0] == "22" for p in gdpr)  # replaced by Articles 22A to 22D
+    assert any(p.unit == "article" and p.path[0] == "22A" for p in gdpr)

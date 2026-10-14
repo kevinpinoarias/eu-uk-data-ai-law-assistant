@@ -42,6 +42,7 @@ _BLOCK_TAGS = frozenset(
 )  # fmt: skip
 _CHAPTER_TAGS = ("Part", "Chapter", "Pblock", "PsubBlock", "EUChapter", "EUSection")
 _SKIPPED_TREES = ("Metadata", "Footnotes", "Commentaries")
+_PLACEHOLDER = re.compile(r"^[\s.]+$")  # an omitted provision is shown as a line of dots: ". . . . ."
 
 
 def _is_note_marker(element: ET.Element) -> bool:
@@ -98,6 +99,27 @@ def _table_lines(tabular: ET.Element) -> list[str]:
             if line:
                 lines.append(line)
     return lines
+
+
+def _is_omitted(element: ET.Element) -> bool:
+    """A provision the law has omitted: it holds only a line of dots, or only omitted sub-provisions."""
+    content = _content(element)
+    return bool(content) and all(
+        _is_omitted(c)
+        if local(c) in _SUB_LEVELS
+        else local(c) == "Text" and bool(_PLACEHOLDER.match(_text(c)))
+        for c in content
+    )
+
+
+def _is_omitted_group(element: ET.Element) -> bool:
+    """An omitted provision, or a heading group of only omitted provisions: none of it is law text."""
+    if local(element) in ("P1", "P2", "P3", "P4", "P5", "P6"):
+        return _is_omitted(element)
+    if local(element) == "P1group":
+        units = [c for c in element if local(c) == "P1"]
+        return bool(units) and all(_is_omitted(u) for u in units)
+    return False
 
 
 def _chapter_label(element: ET.Element) -> str | None:
@@ -177,6 +199,8 @@ class _Parser(ProvisionBuilder):
         citation = _citation(element)
         if citation is None or element.get("Status") in _SKIP_STATUS:
             return
+        if _is_omitted(element):
+            return
         unit, path = citation
         unit = "annex" if unit == "annex" else unit
         tag = local(element)
@@ -212,7 +236,7 @@ class _Parser(ProvisionBuilder):
                     self.emit(unit, "closing", path, quoted, ctx.heading, ctx.chapter, date)
             elif tag_c in _TEXT_BLOCKS:
                 text = _text(child)
-                if not text:
+                if not text or _PLACEHOLDER.match(text):  # omitted words are shown as a line of dots
                     continue
                 if started:
                     self.emit(unit, "closing", path, text, ctx.heading, ctx.chapter, date)
@@ -251,12 +275,38 @@ def _count_skipped(node: ET.Element, counts: dict[str, int], numbers: set[int]) 
         _count_skipped(child, counts, numbers)
 
 
+def _count_omitted(node: ET.Element, found: list[ET.Element]) -> None:
+    if local(node) in _SKIPPED_TREES or node.get("Status") in _SKIP_STATUS or local(node) == "BlockAmendment":
+        return
+    if local(node) in ("P1", "P2", "P3", "P4", "P5", "P6") and _is_omitted(node):
+        found.append(node)  # counted once, at the top: its own sub-provisions are not counted again
+        return
+    for child in node:
+        _count_omitted(child, found)
+
+
 def skipped_provisions(xml: str | bytes) -> dict:
-    """How many top-level repealed and not-yet-in-force elements were left out, and their numbers."""
+    """How many top-level repealed, not-yet-in-force and omitted elements were left out.
+
+    `numbers` are the article and section numbers of the repealed and not-yet-in-force ones, and
+    `omitted_numbers` those of the omitted ones (a line of dots in the source): each set is a known gap."""
     counts = {"repealed": 0, "prospective": 0}
     numbers: set[int] = set()
-    _count_skipped(ET.fromstring(xml), counts, numbers)
-    return {**counts, "numbers": sorted(numbers)}
+    root = ET.fromstring(xml)
+    _count_skipped(root, counts, numbers)
+    omitted: list[ET.Element] = []
+    _count_omitted(root, omitted)
+    omitted_numbers = set()
+    for element in omitted:
+        citation = _citation(element) if local(element) == "P1" else None
+        if citation and citation[0] in ("article", "section") and citation[1] and citation[1][0].isdigit():
+            omitted_numbers.add(int(re.match(r"\d+", citation[1][0]).group()))
+    return {
+        **counts,
+        "omitted": len(omitted),
+        "numbers": sorted(numbers),
+        "omitted_numbers": sorted(omitted_numbers),
+    }
 
 
 def _source_roots(node: ET.Element) -> Iterator[ET.Element]:
@@ -286,11 +336,13 @@ def source_characters(xml: str | bytes) -> int:
     """Letters and digits in the source's recitals, article and section groups, schedules (live text only)."""
 
     def skip(element: ET.Element) -> bool:
-        return _is_note_marker(element) or element.get("Status") in _SKIP_STATUS
+        return _is_note_marker(element) or element.get("Status") in _SKIP_STATUS or _is_omitted_group(element)
 
     root = ET.fromstring(xml)
     return sum(
-        len(re.sub(r"\W", "", text_of(r, skip=skip, block_tags=_BLOCK_TAGS))) for r in _source_roots(root)
+        len(re.sub(r"\W", "", text_of(r, skip=skip, block_tags=_BLOCK_TAGS)))
+        for r in _source_roots(root)
+        if not _is_omitted_group(r)  # the root itself is not passed to `skip`
     )
 
 

@@ -32,6 +32,8 @@
                 <Pnumber PuncBefore="" PuncAfter=".">2</Pnumber>
                 <P2para><Text>This Regulation protects <Addition ChangeId="a1" CommentaryRef="c1">fundamental</Addition> rights<CommentaryRef Ref="c1"/>.</Text></P2para>
               </P2>
+              <P2 id="article-1-5"><Pnumber PuncAfter=".">5</Pnumber><P2para><Text>Words before a list:</Text><P3 id="article-1-5-a"><Pnumber PuncBefore="(" PuncAfter=")">a</Pnumber><P3para><Text>a kept point;</Text></P3para></P3><Text>. . . .</Text></P2para></P2>
+              <P2 id="article-1-4"><Pnumber PuncAfter=".">4</Pnumber><P2para><Text>. . . . . . . . . . . . . . . .</Text></P2para></P2>
               <P2 id="article-1-3" Status="Prospective">
                 <Pnumber PuncBefore="" PuncAfter=".">3</Pnumber>
                 <P2para><Text>A paragraph that is not yet in force.</Text></P2para>
@@ -39,6 +41,8 @@
             </P1para>
           </P1>
         </P1group>
+        <P1group><Title>Omitted heading</Title><P1 id="article-3"><Pnumber>Article 3</Pnumber><P1para><Text>. . . . . . . . . . . . . . . .</Text></P1para></P1></P1group>
+        <P1group><Title>Omitted inside</Title><P1 id="article-4"><Pnumber>Article 4</Pnumber><P1para><P2 id="article-4-1"><Pnumber PuncAfter=".">1</Pnumber><P2para><Text>. . . . . . . .</Text></P2para></P2></P1para></P1></P1group>
         <P1group RestrictStartDate="2026-02-05">
           <Title>Recognised legitimate interests</Title>
           <P1 id="article-1A" RestrictStartDate="2026-02-05">

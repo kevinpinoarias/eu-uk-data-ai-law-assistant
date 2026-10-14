@@ -129,3 +129,9 @@ def test_the_uk_schedule_that_is_thirty_thousand_words_becomes_many_chunks_cut_a
 def test_uk_dates_travel_with_the_chunks(corpus):
     dated = [c for c in corpus["uk-gdpr-en"][1] if c.in_force_from]
     assert dated and max(c.in_force_from for c in dated) >= "2026-02-05"
+
+
+def test_no_chunk_is_only_dots(corpus):
+    """The UK texts show omitted law as lines of dots; those must not become chunks."""
+    for stem, (_, chunks) in corpus.items():
+        assert not [c.id for c in chunks if set(c.text) <= {" ", ".", chr(10)}], stem

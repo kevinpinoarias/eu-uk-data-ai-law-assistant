@@ -4,9 +4,9 @@ Parse the downloaded UK texts, check them, and write them to data/parsed/.
     python -m law_assistant.parse.run_uk
 
 For each of the UK GDPR, the Data Protection Act 2018 and the Data (Use and Access) Act 2025 this writes
-`<key>-en.jsonl` and prints a report: provisions by unit and kind, how many repealed and not-yet-in-force
-elements were left out, structural problems and coverage of the source text. Article and section numbers that
-are missing must be exactly those of the repealed or not-yet-in-force provisions that were skipped.
+`<key>-en.jsonl` and prints a report: provisions by unit and kind, how many repealed, not-yet-in-force and
+omitted elements were left out, structural problems and coverage of the source text. Article and section
+numbers that are missing must be exactly those of the repealed, not-yet-in-force or omitted ones skipped.
 Exit code 1 if any check fails.
 """
 
@@ -35,8 +35,8 @@ class Spec:
 
 
 SPECS = (
-    Spec("uk-gdpr", {"expected_articles": 80, "expected_recitals": 173, "expected_annexes": 2}),
-    Spec("uk-dpa-2018", {"expected_sections": 215, "expected_schedules": 21}),
+    Spec("uk-gdpr", {"expected_articles": 61, "expected_recitals": 173, "expected_annexes": 2}),
+    Spec("uk-dpa-2018", {"expected_sections": 202, "expected_schedules": 21}),
     Spec("uk-duaa-2025", {"expected_sections": 134, "expected_schedules": 15}),
 )
 
@@ -56,7 +56,8 @@ def run(raw_dir: Path, parsed_dir: Path, say: Callable[[str], None] = print) -> 
         )
         write_jsonl(parsed_dir / f"{spec.key}-en.jsonl", provisions)
         skipped = skipped_provisions(data)
-        problems = check_structure(provisions, **spec.expected, allowed_gaps=skipped["numbers"])
+        known_gaps = [*skipped["numbers"], *skipped["omitted_numbers"]]
+        problems = check_structure(provisions, **spec.expected, allowed_gaps=known_gaps)
         ratio = coverage_ratio(provisions, source_characters=source_characters(data), unit_words=UNIT_WORDS)
         if ratio < MIN_COVERAGE:
             problems.append(f"coverage {ratio:.3f} is below {MIN_COVERAGE}")
@@ -65,7 +66,8 @@ def run(raw_dir: Path, parsed_dir: Path, say: Callable[[str], None] = print) -> 
         say(f"{spec.key}: {len(provisions)} provisions {units} {kinds}")
         say(
             f"    left out: {skipped['repealed']} repealed, {skipped['prospective']} not yet in force "
-            f"(numbers {skipped['numbers']}) | coverage {ratio:.4f} | problems {len(problems)}"
+            f"(numbers {skipped['numbers']}), {skipped['omitted']} omitted "
+            f"(numbers {skipped['omitted_numbers']}) | coverage {ratio:.4f} | problems {len(problems)}"
         )
         for problem in problems[:10]:
             say(f"    {problem}")

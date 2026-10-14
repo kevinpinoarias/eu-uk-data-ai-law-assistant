@@ -152,3 +152,26 @@ def test_a_table_beside_the_paragraph_is_kept_row_by_row_as_closing_text(provisi
     assert find(provisions, "uk-test/sec-8").text == "The Table below lists provisions."
     assert find(provisions, "uk-test/sec-8~closing").text == "the affirmative procedure | section 182"
     assert find(provisions, "uk-test/sec-8~closing2").text == "the negative procedure | section 183"
+
+
+def test_provisions_the_law_has_omitted_are_left_out_not_kept_as_dots(provisions):
+    """legislation.gov.uk shows omitted provisions as a Text of dots with no status: an omitted article, an
+    omitted paragraph, and an article whose only paragraph is omitted."""
+    ids = {p.id for p in provisions}
+    assert not any(i.startswith(("uk-test/art-3", "uk-test/art-4")) for i in ids)
+    assert "uk-test/art-1/4" not in ids and "uk-test/art-1/2" in ids
+    assert not any(p.text.strip() and set(p.text) <= {" ", "."} for p in provisions)
+
+
+def test_the_omitted_provisions_are_counted_with_the_numbers_of_the_omitted_articles():
+    skipped = skipped_provisions(FIXTURE.read_bytes())
+    assert (
+        skipped["omitted"] == 3
+    )  # article 3, paragraph 4 of article 1, article 4 (counted once, at the top)
+    assert skipped["omitted_numbers"] == [3, 4]
+
+
+def test_a_closing_line_of_dots_after_a_list_is_omitted_words_not_text(provisions):
+    ids = {p.id for p in provisions}
+    assert {"uk-test/art-1/5", "uk-test/art-1/5/a"} <= ids
+    assert "uk-test/art-1/5~closing" not in ids

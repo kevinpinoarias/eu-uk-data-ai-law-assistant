@@ -42,17 +42,18 @@ For every document: no empty chunk, no duplicate id, none over the cap, no provi
 | AI Act, Official Journal (EN / ES) | 1,426 / 1,428 | 410 / 443 | 69 / 83 | 191 / 230 | 400 / 399 |
 | AI Act, consolidated 27 Jul 2026 (EN / ES) | 1,374 / 1,386 | 235 / 266 | 58 / 66 | 281 / 275 | 400 / 400 |
 | AI Omnibus (EN / ES) | 309 / 305 | 92 / 105 | 5 / 10 | 236 / 277 | 400 / 398 |
-| UK GDPR | 1,169 | 321 | 30 | 134 | 400 |
-| Data Protection Act 2018 | 6,917 | 555 | 57 | 266 | 400 |
+| UK GDPR | 1,092 | 298 | 29 | 138 | 398 |
+| Data Protection Act 2018 | 6,813 | 533 | 54 | 266 | 400 |
 | Data (Use and Access) Act 2025 | 2,430 | 332 | 68 | 280 | 400 |
 | LOPDGDD (as in force 14 Oct 2026) | 763 | 207 | 20 | 137 | 399 |
 
-Total 3,876 chunks, no problems. Spot-checked by eye: GDPR Article 6 (two chunks, cut between paragraphs 2 and 3), Recital 47, AI Act Annex VI, LOPDGDD Article 7 and its third final disposition, DPA 2018 Schedule 19 (101 chunks cut at numbered paragraphs).
+Total 3,831 chunks, no problems (3,876 before the omitted UK provisions were removed). Spot-checked by eye: GDPR Article 6 (two chunks, cut between paragraphs 2 and 3), Recital 47, AI Act Annex VI, LOPDGDD Article 7 and its third final disposition, DPA 2018 Schedule 19 (101 chunks cut at numbered paragraphs).
 
 ## What building it found
 
 - **A parser gap (finding 26 in `PARSING.md`).** The checks reported an empty chunk for AI Act Annex VI: the Official Journal parse had kept the annex heading but none of its four items. Fixed in the parser, with a test.
 - **Two rendering slips**, found by reading chunks: a trailing space after an untitled paragraph number, and "uno." where the BOE prints "Uno.".
+- **36 chunks made of nothing but dots**, found later while reviewing the gold set: the UK texts show omitted law as lines of dots and the parser had kept them (finding 27 in `PARSING.md`). They are gone; a check now confirms no chunk is only dots.
 
 ## Not decided here (for Phase 3, as pre-registered experiments)
 
