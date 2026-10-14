@@ -130,8 +130,8 @@ def test_the_consolidated_ai_act_carries_the_new_application_dates(parsed):
 
 def test_every_ai_act_article_that_changed_is_one_the_omnibus_mentions_apart_from_known_typography(parsed):
     """Changed or inserted articles must be amended by the Omnibus. Articles 103 to 109 amend other acts and quote
-    them, and the two renderings differ in how the quoted passages are set (a quote mark, a capital); Annex VI
-    likewise. Both are typography, not amendments."""
+    them, and the two renderings differ in how the quoted passages are set (a quote mark, a capital). That is
+    typography, not amendments. (Annex VI used to be listed here too; that was a parser gap, now fixed.)"""
     oj = [p for p in parsed[("eu-ai-act-oj", "en")].provisions if p.unit != "recital"]
     consolidated = parsed[("eu-ai-act-consolidated-20260727", "en")].provisions
     diff = compare_texts(oj, consolidated)
@@ -144,7 +144,7 @@ def test_every_ai_act_article_that_changed_is_one_the_omnibus_mentions_apart_fro
         return re.search(rf"\b{word}s?\s+{re.escape(number)}\b", omnibus, re.IGNORECASE) is not None
 
     unexplained = {(u, n) for u, n in differing if not mentioned(u, n)}
-    typography = {("article", str(n)) for n in range(103, 110)} | {("annex", "VI")}
+    typography = {("article", str(n)) for n in range(103, 110)}
     assert unexplained <= typography
 
 
@@ -224,3 +224,14 @@ def test_ai_act_official_journal_text_still_says_2_august_2026_the_omnibus_moves
     assert "It shall apply from 2 August 2026." in original.text
     omnibus = [p for p in parsed[("eu-ai-omnibus-oj", "en")].provisions if "2 December 2027" in p.text]
     assert any(p.unit == "article" for p in omnibus)
+
+
+def test_ai_act_annex_vi_internal_control_items_are_read_in_both_languages(parsed):
+    for lang in ("en", "es"):
+        items = [p for p in parsed[("eu-ai-act-oj", lang)].provisions if p.id.startswith("eu-ai-act/anx-VI/")]
+        assert [p.path for p in items] == [("VI", "1"), ("VI", "2"), ("VI", "3"), ("VI", "4")]
+    second = provision(parsed, "eu-ai-act-oj", "en", "eu-ai-act/anx-VI/2")
+    assert second.text == (
+        "The provider verifies that the established quality management system is in compliance with the "
+        "requirements of Article 17."
+    )

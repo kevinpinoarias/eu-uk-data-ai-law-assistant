@@ -12,8 +12,8 @@ One record per recital, article, numbered paragraph, list point, closing text or
 |---|---|---|---|---|---|---|---|
 | GDPR | EN | 956 | 173 | 99 | 0 | 100.00% | 0 |
 | GDPR | ES | 956 | 173 | 99 | 0 | 100.00% | 0 |
-| AI Act | EN | 1,422 | 180 | 113 | 13 | 99.87% | 0 |
-| AI Act | ES | 1,424 | 180 | 113 | 13 | 99.88% | 0 |
+| AI Act | EN | 1,426 | 180 | 113 | 13 | 99.99% | 0 |
+| AI Act | ES | 1,428 | 180 | 113 | 13 | 99.99% | 0 |
 | Digital Omnibus on AI | EN | 309 | 47 | 4 | 0 | 100.00% | 0 |
 | Digital Omnibus on AI | ES | 305 | 47 | 4 | 0 | 100.00% | 0 |
 
@@ -56,7 +56,7 @@ The six inserted articles are 4a, 60a and 75a to 75d, and the new Annex XIV: all
 Each consolidated parse is compared with the Official Journal parse id by id, ignoring spacing. Every difference should be an amendment or a corrigendum, which makes it an independent test of the parser.
 
 - **GDPR:** the skeletons are identical in both languages. The 16 English and 38 Spanish wording changes are the 2018 corrigendum; for example Article 37(1)(c) says "and" in the Official Journal text and "or" in the consolidated text.
-- **AI Act:** 56 articles and annexes differ. All but Articles 103 to 109 and Annex VI are ones the Omnibus names. Those eight are articles that amend other acts and quote them: the two renderings set the quoted passages differently (a quote mark, a capital), so the differences are typography, not amendments.
+- **AI Act:** 55 articles and annexes differ. All but Articles 103 to 109 are ones the Omnibus names. Those seven are articles that amend other acts and quote them: the two renderings set the quoted passages differently (a quote mark, a capital), so the differences are typography, not amendments.
 - **English against Spanish:** after mapping the English labels for inserted provisions (14a, ba) onto the Spanish ones (14 bis, b bis), the consolidated AI Act differs by 12 ids, all in the new Annex XIV, where Spanish labels single items that English leaves unlabelled.
 
 ### What the checks found in the consolidated markup
@@ -118,3 +118,7 @@ The missing article and section numbers are exactly the repealed or not-yet-in-f
 23. **The preamble** is divided by Roman numerals (I to V) and is explanatory like recitals, so it becomes recitals with the path (section, n). The royal formula and the signature are skipped.
 24. **Dispositions needed a new unit**, `disposition`, with the kind and ordinal as their path (`disp-final/tercera/2`).
 25. **Bullets** ("–") have no label and are numbered `item1`, `item2` within their parent.
+
+## Found later, by the chunk checks (15 October 2026)
+
+26. **Annex VI of the AI Act (Official Journal text) had lost its body.** Its four numbered items are written as a `div` of two inline paragraphs (the label, then the text), a shape that appears only there (4 times in each language), and the annex parser read only direct `p` and `table` children. The parse kept the annex heading with no text, so the chunker produced an empty chunk and its check flagged it. Coverage was 99.87% (English) and 99.88% (Spanish), which sat just under the bar and had been taken as a rounding effect. The cross-check against the consolidated text had also listed Annex VI as a difference and put it down to typography; that explanation was wrong, it was the missing text. Fixed with a test taken from the real markup: coverage is now 99.99% in both languages, 4 more provisions each, and the only differences left that the Omnibus does not name are Articles 103 to 109. Lesson: a coverage figure below 100% is a list of missing text to be explained item by item, not a tolerance.

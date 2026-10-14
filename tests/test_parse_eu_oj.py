@@ -207,3 +207,12 @@ def test_everything_is_in_reading_order_with_unique_ids_and_carries_the_document
     }
     ids = [p.id for p in provisions]
     assert ids.index("eu-test/rct-1") < ids.index("eu-test/art-1/1") < ids.index("eu-test/anx-I")
+
+
+def test_annex_items_written_as_enumeration_divs_with_two_inline_paragraphs_are_read(variants):
+    """The AI Act's Annex VI: each numbered item is a div holding a label paragraph and a text paragraph."""
+    assert find(variants, "eu-test/anx-III").heading == "Procedure based on internal control"
+    first = find(variants, "eu-test/anx-III/1")
+    assert (first.kind, first.path) == ("point", ("III", "1"))
+    assert first.text == "The procedure is the one based on points 2 and 3."
+    assert find(variants, "eu-test/anx-III/2").text == "The provider verifies the quality management system."

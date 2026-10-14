@@ -196,7 +196,7 @@ class _Parser(ProvisionBuilder):
 
     def annex(self, element: ET.Element) -> None:
         number = _ANNEX.fullmatch(element.get("id", "")).group(1)  # type: ignore[union-attr]
-        children = [c for c in element if local(c) in ("p", "table")]
+        children = [_enumeration_paragraph(c) for c in element if _is_annex_content(c)]
         titles = [c for c in children if local(c) == "p" and "oj-doc-ti" in c.get("class", "")]
         heading = _full_text(titles[1]) if len(titles) > 1 else None
         groups = _annex_groups([c for c in children if c not in titles])
@@ -208,6 +208,26 @@ class _Parser(ProvisionBuilder):
             if label is None or text:
                 self.emit("annex", "annex", path, text, heading, None)
             self.blocks(rest, "annex", path, heading, None)
+
+
+def _is_enumeration(element: ET.Element) -> bool:
+    return local(element) == "div" and "oj-enumeration-spacing" in element.get("class", "")
+
+
+def _is_annex_content(element: ET.Element) -> bool:
+    return local(element) in ("p", "table") or _is_enumeration(element)
+
+
+def _enumeration_paragraph(element: ET.Element) -> ET.Element:
+    """An item written as a div of two inline paragraphs (label, then text), as in the AI Act's Annex VI,
+    becomes one paragraph "1) text", the form the list code already reads."""
+    parts = [c for c in element if local(c) == "p"]
+    if not _is_enumeration(element) or len(parts) < 2:
+        return element
+    paragraph = ET.Element("p")
+    body = " ".join(t for t in (_full_text(c) for c in parts[1:]) if t)
+    paragraph.text = f"{_label(_full_text(parts[0]))}) {body}"
+    return paragraph
 
 
 def _annex_groups(children: list[ET.Element]) -> list[tuple[str | None, str, list[ET.Element]]]:
