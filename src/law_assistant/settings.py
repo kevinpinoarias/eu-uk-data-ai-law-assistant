@@ -12,6 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = PROJECT_ROOT / "data" / "raw"  # fetched source documents; git-ignored (see SOURCES.md)
 PARSED_DIR = PROJECT_ROOT / "data" / "parsed"  # parsed provisions (JSON Lines); git-ignored
 CHUNKS_DIR = PROJECT_ROOT / "data" / "chunks"  # chunks (JSON Lines) and their manifest; git-ignored
+GOLD_DIR = PROJECT_ROOT / "eval" / "gold"  # the frozen gold question set; committed
 CONTACT_ENV_VAR = "FETCHER_CONTACT"
 
 
