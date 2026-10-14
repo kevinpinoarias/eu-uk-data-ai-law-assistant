@@ -123,3 +123,12 @@ def test_the_version_decides_which_wording_a_quote_is_checked_against(corpus):
         "quote" in p
         for p in check_against_corpus([question("q006", "Other?", [wrong], language="en")], corpus)
     )
+
+
+def test_every_gold_provision_of_the_committed_set_exists_in_the_corpus(corpus):
+    from law_assistant.evaluation.checks import check_against_corpus
+    from law_assistant.evaluation.gold import read_gold
+
+    path = settings.GOLD_DIR / "questions.jsonl"
+    if path.exists():
+        assert check_against_corpus(read_gold(path), corpus) == []

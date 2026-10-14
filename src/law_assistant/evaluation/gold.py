@@ -31,7 +31,7 @@ TYPES = (
 )
 ROUTES = ("retrieve", "table", "refuse")
 ROUTE_OF = {t: "retrieve" for t in TYPES} | {"numeric": "table", "refuse": "refuse"}
-PHRASINGS = ("lay", "lawyer")
+PHRASINGS = ("lay", "lawyer", "terse")  # terse: a few keywords, as typed into a search box
 AUTHORS = ("kevin", "claude")
 SPLITS = ("dev", "test")
 REASONS = ("out_of_corpus", "legal_advice")

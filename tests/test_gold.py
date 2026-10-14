@@ -10,6 +10,7 @@ import pytest
 from law_assistant.evaluation.gold import (
     LANGUAGE_TARGETS,
     MIX_TARGETS,
+    PHRASINGS,
     REASON_TARGETS,
     GoldProvision,
     GoldQuestion,
@@ -143,3 +144,8 @@ def test_mix_counts_by_type_language_and_reason():
     assert counts["type"] == {"lookup": 1, "refuse": 3}
     assert counts["language"] == {"es": 1, "en": 3}
     assert counts["reason"] == {"legal_advice": 2, "out_of_corpus": 1}
+
+
+def test_a_terse_keyword_style_question_is_a_valid_phrasing():
+    assert question(phrasing="terse").phrasing == "terse"
+    assert {"lay", "lawyer", "terse"} == set(PHRASINGS)

@@ -56,6 +56,29 @@ Claude drafted 65 of the 80 questions (`eval/gold/questions.jsonl`; Kevin's 15 w
 - A gold provision pinned to a version counts only for chunks of that version (decision 50). A question without a version accepts the same unit in any version of that instrument.
 - Questions in one language may have their gold text in another (a Spanish question on a UK Act, an English question on the LOPDGDD): those are the cross-language cases for experiment R4.
 
+## The last 15 questions: gaps in the first 65 (15 October 2026)
+
+Kevin asked Claude to draft the last 15 and to look for ways of asking that the first 65 did not cover. The gaps found, and the question that fills each (q066 to q080):
+
+- scope ("does the GDPR apply to a US company?", q066, with the Europe-versus-Union trap);
+- marketing and the right to object, the commonest real complaint (q067);
+- a false premise, to be corrected ("does the AI Act ban all facial recognition?", q068);
+- roles: controller versus processor (q069);
+- a keyword-style query whose answer is partly in a recital (q070, the first `terse` question);
+- two laws at once (automated rejection of job applicants: GDPR Article 22 and the AI Act, q071);
+- "who enforces it?" (q072);
+- the UK Acts beyond the UK GDPR: complaints to the controller under section 164A of the 2018 Act (q073);
+- Spain's advertising-exclusion systems (q074);
+- application dates for marking AI-generated content and for general-purpose AI models (q075, q076);
+- a keyword-style question with no jurisdiction, where the right answer gives both the EU and the UK figure (q077);
+- a two-step numeric answer (breach notification is in Articles 25 to 39, hence the lower fine tier, q078);
+- a fact outside the corpus inside a topic the corpus covers (India's adequacy status, q079);
+- applying the rule to the user's own facts, where the assistant explains but does not decide (q080).
+
+All 80 now pass the checks and match the plan exactly (16 lookups, 8 definitions, 10 cross-references, 10 comparisons, 8 Spanish-law, 10 as-of, 8 numeric, 10 refusals; 40 Spanish and 40 English; 71 lay, 7 lawyer and 2 terse). Two leakage warnings are expected and annotated (q051 and q068, whose key terms are also the legal terms).
+
+**What this changes about the plan.** One reason for Kevin to write 15 questions was to reduce the risk that the author of the system also shapes the test. That is no longer fully met: Claude wrote all 80. The mitigation is Kevin's review of all 80, and he may rewrite or replace any question; any he writes himself will carry `author: kevin`.
+
 ## Status
 
-Step 2.0 (schema and checks) done. Step 2.1: 65 of 80 questions drafted and checked (13 lookups, 6 definitions, 8 cross-references, 9 comparisons, 7 Spanish-law, 8 as-of, 6 numeric, 8 refusals; 32 Spanish, 33 English; 5 out-of-corpus and 3 legal-advice refusals), pending Kevin's review. Still to write by Kevin (step 2.2): 15 questions as the realistic user: 3 lookups, 2 definitions, 2 cross-references, 1 EU-UK, 1 Spanish-law, 2 as-of, 2 numeric and 2 refusals (1 out-of-corpus, 1 advice), of which 8 in Spanish and 7 in English to reach 40 and 40. Next: 2.3 the structured table (keys already named in the numeric questions), 2.4 the metrics module, 2.5 split and freeze.
+Steps 2.0 (schema and checks) and 2.1 (drafting) are done: 80 of 80 questions written, checked against the corpus and against the plan, and guarded by tests (`tests/test_gold_set.py`, `tests/test_gold_real.py`). Pending Kevin's review (accept, change or drop each). Next: 2.3 the structured table (the table keys are named in the numeric questions; q077 needs a second key for the UK figure), 2.4 the metrics module, 2.5 the split and freeze.
