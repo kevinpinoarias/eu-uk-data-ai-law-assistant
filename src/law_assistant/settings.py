@@ -13,6 +13,25 @@ RAW_DIR = PROJECT_ROOT / "data" / "raw"  # fetched source documents; git-ignored
 CONTACT_ENV_VAR = "FETCHER_CONTACT"
 
 
+def load_env_file(path: Path | None = None) -> None:
+    """Read KEY=VALUE lines from .env into the environment, never overriding a variable that is already set.
+
+    Comments, blank lines and empty values are skipped and surrounding quotes are removed.
+    A missing file is fine.
+    """
+    env_path = path or PROJECT_ROOT / ".env"
+    if not env_path.is_file():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, _, value = line.partition("=")
+        name, value = name.strip(), value.strip().strip("\"'")
+        if name and value:
+            os.environ.setdefault(name, value)
+
+
 def user_agent(contact: str | None = None) -> str:
     """The User-Agent header for fetchers: project, version and a way to reach us.
 

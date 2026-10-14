@@ -5,6 +5,7 @@ requires it), the downloaded source documents must stay out of git, and the vers
 
 from __future__ import annotations
 
+import os
 import tomllib
 
 import pytest
@@ -45,6 +46,33 @@ def test_raw_source_documents_live_in_a_folder_git_ignores():
     assert settings.RAW_DIR == settings.PROJECT_ROOT / "data" / "raw"
     ignored = (settings.PROJECT_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
     assert "data/raw/" in ignored
+
+
+def test_an_env_file_sets_variables_and_skips_comments_blanks_and_empty_values(tmp_path, monkeypatch):
+    for name in ("LAW_TEST_A", "LAW_TEST_B", "LAW_TEST_EMPTY"):
+        monkeypatch.delenv(name, raising=False)
+    env = tmp_path / ".env"
+    env.write_text(
+        '# a comment\n\nLAW_TEST_A=one\nLAW_TEST_B = "two words"\nLAW_TEST_EMPTY=\n', encoding="utf-8"
+    )
+    settings.load_env_file(env)
+    assert os.environ["LAW_TEST_A"] == "one"
+    assert os.environ["LAW_TEST_B"] == "two words"
+    assert "LAW_TEST_EMPTY" not in os.environ
+    for name in ("LAW_TEST_A", "LAW_TEST_B"):
+        monkeypatch.delenv(name)
+
+
+def test_an_env_file_never_overrides_a_variable_that_is_already_set(tmp_path, monkeypatch):
+    monkeypatch.setenv("LAW_TEST_A", "from-the-shell")
+    env = tmp_path / ".env"
+    env.write_text("LAW_TEST_A=from-the-file\n", encoding="utf-8")
+    settings.load_env_file(env)
+    assert os.environ["LAW_TEST_A"] == "from-the-shell"
+
+
+def test_a_missing_env_file_is_fine(tmp_path):
+    settings.load_env_file(tmp_path / "nope.env")
 
 
 def test_the_package_version_matches_pyproject():

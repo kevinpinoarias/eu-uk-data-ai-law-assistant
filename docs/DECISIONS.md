@@ -1,0 +1,19 @@
+# Design decisions
+
+A running record of why things are the way they are: what was chosen, why, and what the alternative was. Newest at the bottom. "Owner" says who made the call: **Kevin** decided it, or **Claude** proposed it and it stands until challenged.
+
+| # | Date | Decision | Why | Alternative considered | Owner |
+|---|---|---|---|---|---|
+| 1 | 13 Oct 2026 | Cover EU, Spanish and UK data-protection and AI law, in English and Spanish, starting with Tier 1 documents | A corpus large enough to make retrieval choices matter; the EU/UK differences and changing law make it a harder problem than a single-law chatbot | A single-law assistant (the common case) | Kevin |
+| 2 | 13 Oct 2026 | Code under Apache-2.0; the texts keep their own licences (see `SOURCES.md`) | Patent grant, common in AI projects; keeps code and data licences clearly apart | MIT | Kevin |
+| 3 | 13 Oct 2026 | Chat model: Gemini 3.1 Flash-Lite, on a billing-enabled project for any public demo | Google's terms require paid services for apps available in the EEA, Switzerland and the UK; the model is cheap (about $0.0015 a question, estimated) | Open-weight models through a free host | Kevin |
+| 4 | 13 Oct 2026 | Deploy on Azure Container Apps with the image in GitHub Container Registry | Same free monthly grant as Cloud Run; Azure Container Registry has no free tier; adds a second cloud | Cloud Run (already known) | Kevin |
+| 5 | 13 Oct 2026 | An answer-model comparison is part of the plan (roadmap item 4.6) | Measure whether the default model is good enough instead of assuming | None: Flash-Lite only | Kevin |
+| 6 | 14 Oct 2026 | `src/` layout, one package (`law_assistant`), one test file per module, Python 3.12 in a `.venv` | Tests import the installed package, so they cannot pass by accident from the wrong folder; 3.12 is widely supported by AI libraries | Flat layout; Python 3.14 (newest, less library support) | Claude |
+| 7 | 14 Oct 2026 | Test first for deterministic code; ruff for lint and format; CI runs lint, tests and a secret scan | Fetchers, parsers and chunkers have exact right answers, so tests can be written before the code | Tests after the code | Claude |
+| 8 | 14 Oct 2026 | The HTTP client is the standard library behind a small `Client` interface; time and HTTP are passed in | No runtime dependency yet; tests use a fake client and a fake clock, so they never touch the network or sleep | `requests` or `httpx` | Claude |
+| 9 | 14 Oct 2026 | Fetched documents go to `data/raw/` (git-ignored) with a `.meta.json` record: URL, retrieval time, hash, size, licence, credit, User-Agent | The sources have different licences and some must not be redistributed; the record is the "retrieval date" that `SOURCES.md` promises | Committing the raw files | Claude |
+| 10 | 14 Oct 2026 | A document is fetched once and never again unless forced; writes are atomic (temporary file, then rename) | Fewer requests to public services; a failed or interrupted download can never leave a half-written file that looks valid | Always re-fetch | Claude |
+| 11 | 14 Oct 2026 | Politeness rules in code: identifying User-Agent (a missing contact is an error), robots.txt honoured, at least 5 seconds between requests or the site's crawl delay if slower, http(s) URLs only | legislation.gov.uk requires an identifying agent and sets a 5-second crawl delay; the rules are also enforced by tests | Hand-written discipline | Claude |
+| 12 | 14 Oct 2026 | robots.txt: a 4xx answer means no restrictions, any other failure stops the fetch | That is what RFC 9309 specifies; failing closed on server errors avoids ignoring rules we could not read | Treat every failure as "allowed" | Claude |
+| 13 | 14 Oct 2026 | A small hand-written `.env` reader instead of a library | Four lines of behaviour, tested; avoids a dependency | `python-dotenv` | Claude |
