@@ -39,6 +39,23 @@ Kevin writes about 15 of them himself, as the realistic user; Claude drafts the 
 
 No qualified lawyer has reviewed the set. Interpretation questions are limited to "what does this text say"; the write-up will say so.
 
+## The lawyer's review of the first 65 questions (15 October 2026)
+
+Claude drafted 65 of the 80 questions (`eval/gold/questions.jsonl`; Kevin's 15 will be q066 to q080) and then re-read every expected answer against the whole provision and its neighbours, as a lawyer would. Each question's `notes` field records its ambiguities. What the review changed:
+
+- **Wrong or incomplete answers corrected:** the data protection officer rule is not "only three cases" (Article 37(4) lets Member State law require more; Spain's LOPDGDD Article 34 does); the high-risk AI duties (Articles 14 and 26) do not yet apply, because the Omnibus moved the dates to 2 December 2027 (Annex III) and 2 August 2028 (Annex I); the AI literacy duty in Article 4 was softened by the Omnibus; limits, exceptions and companion paragraphs were added to the answers on erasure, portability, breach notification, compensation, processor contracts and records.
+- **Jurisdiction cues added** to questions about law that exists in parallel in the EU and the UK, so that a correct UK or national chunk is not scored as a miss.
+- **Versions pinned** where the original and the consolidated wording differ (AI Act Articles 4, 5, 6, 113, new 4a and 75a to 75d; GDPR Article 37(1)(c)), and a before-and-after pair of questions added for three of them (original and current wording).
+- **q017 rewritten** as "does any piece of software count as AI, or only some?", with recital 12 as gold alongside Article 3(1), and the interpretive limit (the Commission's guidelines are not in the corpus) written into the notes.
+- **Not asserted:** where the text read does not state a fact (the date Article 4a starts to apply, the reason for a corrigendum), the answer says nothing about it.
+- **Data problems found by the review:** omitted UK provisions kept as lines of dots (finding 27 in `PARSING.md`, decision 47), and the paragraph-level meaning of BOE dates (decision 52).
+
+## Rules for the metrics (step 2.4)
+
+- A retrieved chunk is a hit if it contains one of the gold provision's pinpoint ids; if no pinpoints are given, any chunk of the unit counts (decision 51).
+- A gold provision pinned to a version counts only for chunks of that version (decision 50). A question without a version accepts the same unit in any version of that instrument.
+- Questions in one language may have their gold text in another (a Spanish question on a UK Act, an English question on the LOPDGDD): those are the cross-language cases for experiment R4.
+
 ## Status
 
-Step 2.0 (schema and checks) done, test first, 304 tests passing. Next: 2.1 drafting in batches, 2.2 Kevin's questions, 2.3 the structured table, 2.4 the metrics module (hit@k, recall@k, MRR, nDCG, paired bootstrap), 2.5 split and freeze.
+Step 2.0 (schema and checks) done. Step 2.1: 65 of 80 questions drafted and checked (13 lookups, 6 definitions, 8 cross-references, 9 comparisons, 7 Spanish-law, 8 as-of, 6 numeric, 8 refusals; 32 Spanish, 33 English; 5 out-of-corpus and 3 legal-advice refusals), pending Kevin's review. Still to write by Kevin (step 2.2): 15 questions as the realistic user: 3 lookups, 2 definitions, 2 cross-references, 1 EU-UK, 1 Spanish-law, 2 as-of, 2 numeric and 2 refusals (1 out-of-corpus, 1 advice), of which 8 in Spanish and 7 in English to reach 40 and 40. Next: 2.3 the structured table (keys already named in the numeric questions), 2.4 the metrics module, 2.5 split and freeze.
