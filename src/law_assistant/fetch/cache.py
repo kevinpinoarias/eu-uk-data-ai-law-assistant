@@ -64,6 +64,8 @@ def fetch_document(
     headers = {"User-Agent": user_agent}
     if doc.accept:
         headers["Accept"] = doc.accept
+    if doc.accept_language:
+        headers["Accept-Language"] = doc.accept_language
     response = client.get(doc.url, headers)
     if response.status != 200:
         raise FetchError(f"{doc.url} answered HTTP {response.status}")

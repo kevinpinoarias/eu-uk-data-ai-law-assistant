@@ -16,7 +16,7 @@ Terms were read on each source's own legal page on 13 October 2026. This is proj
 
 | Document | Identifier | Versions to ingest | Languages | Fetch route |
 |---|---|---|---|---|
-| GDPR, Regulation (EU) 2016/679 | ELI `http://data.europa.eu/eli/reg/2016/679/oj`, CELEX `32016R0679` | Official Journal text; the consolidated text (its CELEX to be confirmed in Phase 1) | EN, ES | EUR-Lex Cellar REST API |
+| GDPR, Regulation (EU) 2016/679 | ELI `http://data.europa.eu/eli/reg/2016/679/oj`, CELEX `32016R0679` | Official Journal text; consolidated text `02016R0679-20160504` (the only consolidated version EUR-Lex lists, 04/05/2016). Fetched 14 Oct 2026 as XHTML | EN, ES | EUR-Lex Cellar REST API |
 | AI Act, Regulation (EU) 2024/1689 | ELI `http://data.europa.eu/eli/reg/2024/1689/oj`, CELEX `32024R1689` | Original, 12/07/2024 (`32024R1689`); consolidated, 27/07/2026 (`02024R1689-20260727`, listed by EUR-Lex as the current version) | EN, ES | EUR-Lex Cellar REST API |
 | Digital Omnibus on AI, Regulation (EU) 2026/1744 of 8 July 2026 | ELI `http://data.europa.eu/eli/reg/2026/1744/oj`, CELEX `32026R1744`; OJ L, 24.7.2026 | Official Journal text (in force from 27 July 2026) | EN, ES (24 languages published) | EUR-Lex Cellar REST API |
 | UK GDPR | `legislation.gov.uk/eur/2016/679` | Latest revised; dated versions to be tested through the API | EN | legislation.gov.uk API |
@@ -39,7 +39,9 @@ Terms were read on each source's own legal page on 13 October 2026. This is proj
 - 19 June 2026: the remainder of section 103 (data subject complaints), per the commencement notes on legislation.gov.uk.
 - 30 September 2026: the ICO becomes the Information Commission; its functions transfer and the "ICO" name stays.
 
-**The EU GDPR itself:** no adopted amendment found. The Digital Omnibus changes to the GDPR (proposed 19 November 2025) were still in negotiation in the sources found; to be verified on the Legislative Observatory (procedure 2025/0360(COD)) before Phase 1 ends.
+**The EU GDPR itself:** no adopted amendment found. EUR-Lex lists a single consolidated version (04/05/2016), which supports this. The Digital Omnibus changes to the GDPR (proposed 19 November 2025) were still in negotiation in the sources found; to be verified on the Legislative Observatory (procedure 2025/0360(COD)) before Phase 1 ends.
+
+**What the fetched EU files contain (14 October 2026):** recitals appear only in the Official Journal texts (GDPR 173, AI Act 180, Digital Omnibus 47); the consolidated texts hold the articles only (GDPR 99, AI Act 113). Article numbers match across English and Spanish. The consolidated AI Act of 27/07/2026 contains the Omnibus dates (2 December 2027); the 2024 Official Journal text does not.
 
 ## Fetch rules learned
 

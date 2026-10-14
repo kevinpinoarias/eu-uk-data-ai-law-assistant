@@ -109,6 +109,24 @@ def test_a_document_with_no_format_sends_no_accept_header(tmp_path):
     client = FakeClient(Response(200, {}, BODY))
     _fetch(tmp_path, client)
     assert "Accept" not in client.calls[0][1]
+    assert "Accept-Language" not in client.calls[0][1]
+
+
+def test_a_document_that_names_a_language_asks_for_it_with_an_accept_language_header(tmp_path):
+    client = FakeClient(Response(200, {}, BODY))
+    doc = replace(DOC, accept="application/xhtml+xml", accept_language="spa")
+    fetch_document(
+        doc,
+        tmp_path,
+        client,
+        _throttle(),
+        RobotsPolicy.from_text("User-agent: *\n"),
+        "test-agent/1 (contact)",
+        now=lambda: WHEN,
+    )
+    headers = client.calls[0][1]
+    assert headers["Accept"] == "application/xhtml+xml"
+    assert headers["Accept-Language"] == "spa"
 
 
 def test_a_cached_document_is_not_fetched_again(tmp_path):

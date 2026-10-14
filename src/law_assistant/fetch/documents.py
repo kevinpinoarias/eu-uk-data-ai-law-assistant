@@ -15,3 +15,4 @@ class SourceDocument:
     licence: str
     credit: str  # the credit line SOURCES.md requires wherever the text is shown
     accept: str | None = None  # the format to ask for (an Accept header), when the source serves several
+    accept_language: str | None = None  # the language to ask for (an Accept-Language header), likewise
