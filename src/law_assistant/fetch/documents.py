@@ -14,3 +14,4 @@ class SourceDocument:
     suffix: str  # file extension of the cached document, e.g. ".xml"
     licence: str
     credit: str  # the credit line SOURCES.md requires wherever the text is shown
+    accept: str | None = None  # the format to ask for (an Accept header), when the source serves several

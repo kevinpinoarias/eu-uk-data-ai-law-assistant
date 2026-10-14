@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -87,6 +88,27 @@ def test_the_request_carries_our_user_agent():
         _fetch(Path(d), client)
     assert client.calls[0][0] == DOC.url
     assert client.calls[0][1]["User-Agent"] == "test-agent/1 (contact)"
+
+
+def test_a_document_that_names_a_format_asks_for_it_with_an_accept_header(tmp_path):
+    client = FakeClient(Response(200, {}, BODY))
+    doc = replace(DOC, accept="application/xml")
+    fetch_document(
+        doc,
+        tmp_path,
+        client,
+        _throttle(),
+        RobotsPolicy.from_text("User-agent: *\n"),
+        "test-agent/1 (contact)",
+        now=lambda: WHEN,
+    )
+    assert client.calls[0][1] == {"User-Agent": "test-agent/1 (contact)", "Accept": "application/xml"}
+
+
+def test_a_document_with_no_format_sends_no_accept_header(tmp_path):
+    client = FakeClient(Response(200, {}, BODY))
+    _fetch(tmp_path, client)
+    assert "Accept" not in client.calls[0][1]
 
 
 def test_a_cached_document_is_not_fetched_again(tmp_path):

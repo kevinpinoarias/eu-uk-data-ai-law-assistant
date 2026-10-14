@@ -22,7 +22,7 @@ Terms were read on each source's own legal page on 13 October 2026. This is proj
 | UK GDPR | `legislation.gov.uk/eur/2016/679` | Latest revised; dated versions to be tested through the API | EN | legislation.gov.uk API |
 | Data Protection Act 2018 (c. 12) | `legislation.gov.uk/ukpga/2018/12` | Latest revised ("up to date with all changes known to be in force on or before 12 October 2026" when read) | EN | legislation.gov.uk API |
 | Data (Use and Access) Act 2025 (c. 18, Royal Assent 19 June 2025) | `legislation.gov.uk/ukpga/2025/18` | Dated versions from 19/06/2025 to 30/09/2026 are published | EN | legislation.gov.uk API |
-| LOPDGDD, Ley Orgánica 3/2018 | BOE-A-2018-16673; ELI `https://www.boe.es/eli/es/lo/2018/12/05/3/con` | Consolidated text, last updated 27/12/2025; the API holds every version since publication | ES | BOE open-data API (`/datosabiertos/api/legislacion-consolidada/id/BOE-A-2018-16673/texto`) |
+| LOPDGDD, Ley Orgánica 3/2018 | BOE-A-2018-16673; ELI `https://www.boe.es/eli/es/lo/2018/12/05/3/con` | Consolidated text with its 7 dated versions, from 7 Dec 2018 to 28 Dec 2025 (fetched 14 Oct 2026; the API's record is stamped updated 8 Oct 2026) | ES | BOE open-data API (`/datosabiertos/api/legislacion-consolidada/id/BOE-A-2018-16673/texto`) |
 
 ## Facts confirmed in step 0.2
 

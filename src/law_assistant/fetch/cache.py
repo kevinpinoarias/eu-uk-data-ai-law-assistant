@@ -61,7 +61,10 @@ def fetch_document(
         raise PermissionError(f"{doc.url} is disallowed by robots.txt; not fetching it.")
 
     throttle.wait()
-    response = client.get(doc.url, {"User-Agent": user_agent})
+    headers = {"User-Agent": user_agent}
+    if doc.accept:
+        headers["Accept"] = doc.accept
+    response = client.get(doc.url, headers)
     if response.status != 200:
         raise FetchError(f"{doc.url} answered HTTP {response.status}")
     if not response.body:
