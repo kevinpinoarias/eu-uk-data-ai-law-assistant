@@ -79,12 +79,50 @@ def check_structure(
     return problems
 
 
-def compare_skeletons(first: Iterable[Provision], second: Iterable[Provision]) -> list[str]:
+_LATIN_SUFFIX = {
+    "bis": "a",
+    "ter": "b",
+    "quater": "c",
+    "quinquies": "d",
+    "sexies": "e",
+    "septies": "f",
+    "octies": "g",
+}
+_LATIN_LABEL = re.compile(r"\s+(" + "|".join(_LATIN_SUFFIX) + r")\b")
+
+
+def _normalised_id(id_: str) -> str:
+    """Spanish writes inserted provisions "14 bis", "14 ter"; English 14a, 14b. Map both to 14a, 14b."""
+    return _LATIN_LABEL.sub(lambda m: _LATIN_SUFFIX[m.group(1)], id_)
+
+
+def compare_skeletons(
+    first: Iterable[Provision], second: Iterable[Provision], *, normalise_inserted_labels: bool = False
+) -> list[str]:
     """Differences between two languages' ids; the same law must give the same skeleton."""
-    a, b = {p.id for p in first}, {p.id for p in second}
+    fix = _normalised_id if normalise_inserted_labels else (lambda i: i)
+    a, b = {fix(p.id) for p in first}, {fix(p.id) for p in second}
     return [f"only in the first: {i}" for i in sorted(a - b)] + [
         f"only in the second: {i}" for i in sorted(b - a)
     ]
+
+
+def compare_texts(first: Iterable[Provision], second: Iterable[Provision]) -> dict[str, list[str]]:
+    """Compare two parses of (versions of) the same law id by id, ignoring spacing.
+
+    Returns the ids whose wording changed and the ids present on one side only. Used to check a consolidated
+    text against the Official Journal text: every change should be an amendment or a corrigendum.
+    """
+
+    def squash(text: str) -> str:
+        return re.sub(r"\s+", "", text)
+
+    a, b = {p.id: p for p in first}, {p.id: p for p in second}
+    return {
+        "changed": sorted(i for i in a.keys() & b.keys() if squash(a[i].text) != squash(b[i].text)),
+        "only_first": sorted(a.keys() - b.keys()),
+        "only_second": sorted(b.keys() - a.keys()),
+    }
 
 
 def coverage_ratio(

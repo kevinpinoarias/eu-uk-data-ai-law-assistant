@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 from collections.abc import Iterator
 
 from law_assistant.model import Provision
+from law_assistant.parse.builder import ProvisionBuilder
 from law_assistant.parse.text import clean, local, text_of
 
 _RECITAL = re.compile(r"rct_(\d+)")
@@ -33,7 +34,6 @@ _SECTION_HEADING = re.compile(
     r"^(?:section|secci[oó]n|part|parte)\s+([A-Za-z0-9]+)[\s:.—–-]*(.*)$", re.IGNORECASE
 )
 _NUMBERED_HEADING = re.compile(r"^(\d+)\.\s+(.*)$")
-_PREFIX = {"recital": "rct", "article": "art", "annex": "anx"}
 
 
 def _is_footnote_marker(element: ET.Element) -> bool:
@@ -83,49 +83,7 @@ def _split_lead(children: list[ET.Element]) -> tuple[list[ET.Element], list[ET.E
     return children, []
 
 
-class _Parser:
-    def __init__(self, instrument: str, language: str, version: str, source_key: str | None) -> None:
-        self.instrument, self.language, self.version, self.source_key = (
-            instrument,
-            language,
-            version,
-            source_key,
-        )
-        self.provisions: list[Provision] = []
-        self._ids: dict[str, int] = {}
-
-    def emit(
-        self,
-        unit: str,
-        kind: str,
-        path: tuple[str, ...],
-        text: str,
-        heading: str | None,
-        chapter: str | None,
-    ) -> None:
-        base = f"{self.instrument}/{_PREFIX[unit]}-" + "/".join(path)
-        if kind == "closing":
-            base += "~closing"
-        count = self._ids.get(base, 0) + 1
-        self._ids[base] = count
-        self.provisions.append(
-            Provision(
-                id=base if count == 1 else f"{base}{count}",
-                instrument=self.instrument,
-                jurisdiction="EU",
-                language=self.language,
-                version=self.version,
-                unit=unit,
-                kind=kind,
-                path=path,
-                text=text,
-                order=len(self.provisions),
-                heading=heading,
-                chapter=chapter,
-                source_key=self.source_key,
-            )
-        )
-
+class _Parser(ProvisionBuilder):
     # --- lists: lead text, tables of points (nested), closing text ------------------------------------------
 
     def blocks(

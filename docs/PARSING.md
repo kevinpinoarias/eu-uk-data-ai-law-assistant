@@ -1,6 +1,6 @@
-# Parsing the EU Official Journal texts
+# Parsing the EU texts (Official Journal and consolidated)
 
-How the downloaded XHTML becomes `Provision` records, how it is checked, and what the checks found. The code is in `src/law_assistant/parse/`; run it with `python -m law_assistant.parse.run_eu`.
+How the downloaded XHTML becomes `Provision` records, how it is checked, and what the checks found. The code is in `src/law_assistant/parse/` (`eu_oj.py` for the Official Journal texts, `eu_consolidated.py` for the consolidated texts); run everything with `python -m law_assistant.parse.run_eu`.
 
 ## What a Provision is
 
@@ -37,3 +37,34 @@ Each of these was invisible without a check. Every one became a test on a small 
 ## Spot-checking by eye
 
 The checks cannot say whether a sentence was read correctly, only that nothing structural is wrong. Golden provisions in `tests/test_parse_eu_real.py` assert the exact text of Article 6(1)(f), the definition of personal data, Recital 47, AI Act Article 5(1)(a) and Annex III against the official text. A human sample against the official pages is still planned before the corpus is trusted.
+
+## The consolidated texts (14 October 2026)
+
+A consolidated text is the law as currently amended. It has no recitals and different markup, so it has its own parser; the stored `version` field says which text a provision comes from (`oj`, `consolidated-20160504`, `consolidated-20260727`).
+
+| Text | Language | Provisions | Articles | Annexes | Coverage | Against the Official Journal text |
+|---|---|---|---|---|---|---|
+| GDPR, consolidated | EN | 783 | 99 | 0 | 100.00% | 16 wording changes, 0 ids on one side only |
+| GDPR, consolidated | ES | 783 | 99 | 0 | 100.00% | 38 wording changes, 0 ids on one side only |
+| AI Act, consolidated 27 July 2026 | EN | 1,374 | 113 + 6 inserted | 14 | 99.95% | 64 wording changes, 154 ids on one side only |
+| AI Act, consolidated 27 July 2026 | ES | 1,386 | 113 + 6 inserted | 14 | 99.94% | 64 wording changes, 168 ids on one side only |
+
+The six inserted articles are 4a, 60a and 75a to 75d, and the new Annex XIV: all added by the Digital Omnibus on AI.
+
+### The cross-check
+
+Each consolidated parse is compared with the Official Journal parse id by id, ignoring spacing. Every difference should be an amendment or a corrigendum, which makes it an independent test of the parser.
+
+- **GDPR:** the skeletons are identical in both languages. The 16 English and 38 Spanish wording changes are the 2018 corrigendum; for example Article 37(1)(c) says "and" in the Official Journal text and "or" in the consolidated text.
+- **AI Act:** 56 articles and annexes differ. All but Articles 103 to 109 and Annex VI are ones the Omnibus names. Those eight are articles that amend other acts and quote them: the two renderings set the quoted passages differently (a quote mark, a capital), so the differences are typography, not amendments.
+- **English against Spanish:** after mapping the English labels for inserted provisions (14a, ba) onto the Spanish ones (14 bis, b bis), the consolidated AI Act differs by 12 ids, all in the new Annex XIV, where Spanish labels single items that English leaves unlabelled.
+
+### What the checks found in the consolidated markup
+
+7. **Different markup altogether:** paragraphs are `div.norm` with a number span and lists are two-column grids, not tables.
+8. **Amendment marks inside the text:** `►C1 ... ◄` brackets and `▼B` lines, and footnote markers that leave "()" behind once removed.
+9. **A second subparagraph** is a sibling paragraph in the consolidated markup but part of the paragraph in the Official Journal markup; it is merged so both parses agree.
+10. **The Spanish consolidated Article 4** lays definitions out as `dlist-term | dlist-definition` tables with "a)" lines, a third layout after the two in the Official Journal text.
+11. **Annex sections** ("Section A", "3. Quality management system") and dotted numbering ("3.1.") appear as plain paragraphs and divs.
+12. **Inserted provisions** are numbered 14a in English and "14 bis" in Spanish.
+

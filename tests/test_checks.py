@@ -6,7 +6,7 @@ numbers that run 1..N without gaps, known totals, clean text, and the same skele
 from __future__ import annotations
 
 from law_assistant.model import Provision
-from law_assistant.parse.checks import check_structure, compare_skeletons, coverage_ratio
+from law_assistant.parse.checks import check_structure, compare_skeletons, compare_texts, coverage_ratio
 
 
 def prov(id_, path, text="some text", *, unit="article", kind="paragraph", heading="A title", language="en"):
@@ -99,3 +99,36 @@ def test_coverage_is_text_plus_what_moved_into_metadata_over_the_source_size():
     # text 8 + labels "1" and "a" 2 + the heading "A title" once (6 letters) + "Article1" 8 = 24 characters
     assert coverage_ratio(doc, source_characters=24, unit_words={"article": "Article"}) == 1.0
     assert coverage_ratio(doc, source_characters=48, unit_words={"article": "Article"}) == 0.5
+
+
+def test_texts_are_compared_ignoring_spacing_so_only_real_wording_changes_are_reported():
+    first = [
+        prov("eu-test/art-1/1", ["1", "1"], text="«data» : any information ;"),
+        prov("eu-test/art-2", ["2"], text="Processing shall be lawful.", kind="article"),
+        prov("eu-test/art-3", ["3"], text="Only in the first.", kind="article"),
+    ]
+    second = [
+        prov("eu-test/art-1/1", ["1", "1"], text="«data»: any information;"),  # spacing only
+        prov("eu-test/art-2", ["2"], text="Processing shall be unlawful.", kind="article"),  # wording changed
+        prov("eu-test/art-4", ["4"], text="Only in the second.", kind="article"),
+    ]
+    diff = compare_texts(first, second)
+    assert diff["changed"] == ["eu-test/art-2"]
+    assert diff["only_first"] == ["eu-test/art-3"]
+    assert diff["only_second"] == ["eu-test/art-4"]
+
+
+def test_inserted_labels_match_across_languages_when_compared_with_normalising_on():
+    # English numbers inserted provisions 14a, ba; Spanish writes them "14 bis", "b bis"
+    en = [prov("eu-test/art-3/14a", ["3", "14a"]), prov("eu-test/art-5/1/ba", ["5", "1", "ba"], kind="point")]
+    es = [
+        prov("eu-test/art-3/14 bis", ["3", "14 bis"]),
+        prov("eu-test/art-5/1/b bis", ["5", "1", "b bis"], kind="point"),
+    ]
+    assert compare_skeletons(en, es) != []
+    assert compare_skeletons(en, es, normalise_inserted_labels=True) == []
+    ter = [prov("eu-test/art-3/14 ter", ["3", "14 ter"])]
+    assert (
+        compare_skeletons([prov("eu-test/art-3/14b", ["3", "14b"])], ter, normalise_inserted_labels=True)
+        == []
+    )
