@@ -1,0 +1,29 @@
+"""Project-wide settings: where files live, and the identifying User-Agent every fetcher must send."""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from law_assistant import __version__
+
+PROJECT_NAME = "eu-uk-data-ai-law-assistant"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+RAW_DIR = PROJECT_ROOT / "data" / "raw"  # fetched source documents; git-ignored (see SOURCES.md)
+CONTACT_ENV_VAR = "FETCHER_CONTACT"
+
+
+def user_agent(contact: str | None = None) -> str:
+    """The User-Agent header for fetchers: project, version and a way to reach us.
+
+    legislation.gov.uk does not accept anonymous agents and strongly recommends contact details, so a
+    missing contact is an error, not a silent fallback. `contact` wins over the FETCHER_CONTACT variable.
+    """
+    value = (contact if contact is not None else os.environ.get(CONTACT_ENV_VAR, "")).strip()
+    if not value:
+        raise ValueError(
+            f"Set {CONTACT_ENV_VAR} to an email address or URL: fetchers must identify themselves."
+        )
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
+        raise ValueError("The contact must not contain control characters.")
+    return f"{PROJECT_NAME}/{__version__} (research project; contact: {value})"

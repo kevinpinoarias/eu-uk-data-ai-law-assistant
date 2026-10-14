@@ -36,6 +36,20 @@ Regulator guidance, case law and adjacent laws come in later tiers. See [SOURCES
 | 4. Answer layer | A LangGraph workflow: route, retrieve, grade, answer with citations, verify, or abstain; compared with no retrieval and with the whole corpus in the prompt |
 | 5. Ship | API, interface, Docker, CI, deployment and retrieval traces |
 
+## Development
+
+Python 3.12. From the repository root:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate          # Windows; on Linux or macOS: source .venv/bin/activate
+python -m pip install -e ".[dev]"
+python -m pytest
+ruff check . && ruff format --check .
+```
+
+Copy `.env.example` to `.env` and set `FETCHER_CONTACT` before running any fetcher: the source sites require an identifying User-Agent.
+
 ## Disclaimer
 
 This project explains and cites public legal texts. It is not legal advice, it can be wrong or out of date, and it must not be used for decisions about real compliance. Check the official source.
