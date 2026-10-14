@@ -10,6 +10,7 @@ from law_assistant import __version__
 PROJECT_NAME = "eu-uk-data-ai-law-assistant"
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = PROJECT_ROOT / "data" / "raw"  # fetched source documents; git-ignored (see SOURCES.md)
+PARSED_DIR = PROJECT_ROOT / "data" / "parsed"  # parsed provisions (JSON Lines); git-ignored
 CONTACT_ENV_VAR = "FETCHER_CONTACT"
 
 

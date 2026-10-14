@@ -78,3 +78,9 @@ def test_a_missing_env_file_is_fine(tmp_path):
 def test_the_package_version_matches_pyproject():
     with (settings.PROJECT_ROOT / "pyproject.toml").open("rb") as f:
         assert tomllib.load(f)["project"]["version"] == law_assistant.__version__
+
+
+def test_parsed_documents_live_in_a_folder_git_ignores():
+    assert settings.PARSED_DIR == settings.PROJECT_ROOT / "data" / "parsed"
+    ignored = (settings.PROJECT_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert "data/parsed/" in ignored
