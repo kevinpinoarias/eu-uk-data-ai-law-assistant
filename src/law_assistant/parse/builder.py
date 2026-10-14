@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from law_assistant.model import Provision
 
-_PREFIX = {"recital": "rct", "article": "art", "section": "sec", "annex": "anx", "schedule": "sch"}
+_PREFIX = {
+    "recital": "rct",
+    "article": "art",
+    "section": "sec",
+    "annex": "anx",
+    "schedule": "sch",
+    "disposition": "disp",
+}
 
 
 class ProvisionBuilder:

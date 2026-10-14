@@ -9,7 +9,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 JURISDICTIONS = ("EU", "UK", "ES")
-UNITS = ("recital", "article", "section", "annex", "schedule")  # what the first label of `path` refers to
+UNITS = ("recital", "article", "section", "annex", "schedule", "disposition")  # what `path[0]` refers to
 KINDS = (
     "recital",  # a recital (explanatory, not binding)
     "article",  # an article's own text outside numbered paragraphs: a one-paragraph article, an intro line

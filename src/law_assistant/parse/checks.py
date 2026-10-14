@@ -31,6 +31,7 @@ def check_structure(
     expected_recitals: int | None = None,
     expected_annexes: int | None = None,
     expected_schedules: int | None = None,
+    expected_dispositions: int | None = None,
     allowed_gaps: Iterable[int] = (),
 ) -> list[str]:
     """Return a list of problems; an empty list means the document passes.
@@ -72,6 +73,11 @@ def check_structure(
         ("recitals", len(numbered["recital"]), expected_recitals),
         ("annexes", len({p.path[0] for p in provisions if p.unit == "annex"}), expected_annexes),
         ("schedules", len({p.path[0] for p in provisions if p.unit == "schedule"}), expected_schedules),
+        (
+            "dispositions",
+            len({p.path[:2] for p in provisions if p.unit == "disposition"}),
+            expected_dispositions,
+        ),
     ):
         if expected is not None and found != expected:
             problems.append(f"expected {expected} {name}, found {found}")
@@ -154,8 +160,12 @@ def coverage_ratio(
     words = _DEFAULT_UNIT_WORDS if unit_words is None else unit_words
     kept = sum(size(p.text) for p in provisions)
     kept += sum(size(p.path[-1]) for p in provisions if p.kind in ("point", "paragraph", "recital"))
-    units = {(p.unit, p.path[0]) for p in provisions if p.unit in ("article", "section", "annex", "schedule")}
+    units = {
+        (p.unit, *(p.path[:2] if p.unit == "disposition" else p.path[:1]))
+        for p in provisions
+        if p.unit in ("article", "section", "annex", "schedule", "disposition")
+    }
     headings = {(p.unit, p.path[0], p.heading) for p in provisions if p.heading and p.unit != "recital"}
     kept += sum(size(heading) for _, _, heading in headings)
-    kept += sum(size(words.get(unit, "") + number) for unit, number in units)
+    kept += sum(size(words.get(unit[0], "") + "".join(unit[1:])) for unit in units)
     return kept / source_characters

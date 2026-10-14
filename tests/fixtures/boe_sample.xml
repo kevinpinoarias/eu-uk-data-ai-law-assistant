@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+<status><code>200</code><text>ok</text></status>
+<data>
+<texto>
+<bloque id="pr" tipo="preambulo" titulo="[preambulo]">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="centro_redonda">FELIPE VI</p>
+    <p class="centro_redonda">REY DE ESPAÑA</p>
+    <p class="parrafo_2">A todos los que la presente vieren y entendieren.</p>
+    <p class="centro_redonda">PREÁMBULO</p>
+    <p class="centro_redonda">I</p>
+    <p class="parrafo">La protección de las personas físicas es un derecho fundamental.</p>
+    <p class="parrafo">El Tribunal Constitucional lo ha señalado.</p>
+    <p class="centro_redonda">II</p>
+    <p class="parrafo">El Reglamento general ha armonizado la materia.</p>
+  </version>
+</bloque>
+<bloque id="ti" tipo="encabezado" titulo="TÍTULO I">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="titulo_num">TÍTULO I</p>
+    <p class="titulo_tit">Disposiciones generales</p>
+  </version>
+</bloque>
+<bloque id="a1" tipo="precepto" titulo="Artículo 1">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="articulo">Artículo 1. Objeto de la ley.</p>
+    <p class="parrafo">La presente ley orgánica tiene por objeto:</p>
+    <p class="parrafo_2">a) Adaptar el ordenamiento jurídico al Reglamento.</p>
+    <p class="parrafo">El derecho fundamental de las personas físicas ampara este objeto.</p>
+    <p class="parrafo">b) Garantizar los derechos digitales.</p>
+  </version>
+</bloque>
+<bloque id="a2" tipo="precepto" titulo="Artículo 2">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="articulo">Artículo 2. Ámbito de aplicación.</p>
+    <p class="parrafo">1. Lo dispuesto se aplica a cualquier tratamiento.</p>
+    <p class="parrafo">2. Esta ley orgánica no será de aplicación:</p>
+    <p class="parrafo_2">a) A los tratamientos excluidos.</p>
+    <p class="parrafo">b) A los tratamientos de personas fallecidas.</p>
+    <p class="parrafo">3. Los tratamientos restantes se rigen por su normativa.</p>
+    <p class="parrafo_2">a) Un primer supuesto del apartado 3.</p>
+  </version>
+  <version id_norma="BOE-A-2021-8806" fecha_publicacion="20210527" fecha_vigencia="20210616">
+    <p class="articulo">Artículo 2. Ámbito de aplicación.</p>
+    <p class="parrafo">1. Lo dispuesto se aplica a cualquier tratamiento, incluidos los policiales.</p>
+    <p class="parrafo">2. Esta ley orgánica no será de aplicación:</p>
+    <p class="parrafo_2">a) A los tratamientos excluidos.</p>
+    <p class="parrafo">b) A los tratamientos de personas fallecidas.</p>
+    <p class="parrafo">3. Los tratamientos restantes se rigen por su normativa.</p>
+    <p class="parrafo_2">a) Un primer supuesto del apartado 3.</p>
+    <p class="nota_pie">Se añade el apartado 5 por la disposición final 4.1 de la Ley Orgánica 7/2021. Ref. BOE-A-2021-8806#df-4</p>
+    <blockquote><p class="nota_pie">Se modifica el apartado 1 por la Ley Orgánica 7/2021.</p></blockquote>
+  </version>
+</bloque>
+<bloque id="ci" tipo="encabezado" titulo="CAPÍTULO I">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="capitulo_num">CAPÍTULO I</p>
+    <p class="capitulo_tit">Principios</p>
+  </version>
+</bloque>
+<bloque id="s1" tipo="encabezado" titulo="Sección 1">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="seccion">Sección 1.ª Disposiciones generales</p>
+  </version>
+</bloque>
+<bloque id="a1-2" tipo="precepto" titulo="Artículo 3">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="articulo">Artículo 3. Lista de supuestos.</p>
+    <p class="parrafo">Se aplica en los casos siguientes:</p>
+    <p class="parrafo_2">– El primer caso,</p>
+    <p class="parrafo">– el segundo caso,</p>
+    <p class="parrafo">– el tercer caso.</p>
+    <p class="parrafo">Este último párrafo cierra la lista.</p>
+  </version>
+</bloque>
+<bloque id="a1-3" tipo="precepto" titulo="Artículo 53 bis">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="articulo">Artículo 53 bis. Un artículo insertado.</p>
+    <p class="parrafo">Texto del artículo insertado.</p>
+  </version>
+</bloque>
+<bloque id="a1-4" tipo="precepto" titulo="Artículo 4">
+  <version id_norma="BOE-A-2026-9" fecha_publicacion="20261001" fecha_vigencia="20270101">
+    <p class="articulo">Artículo 4. Un artículo todavía no vigente.</p>
+    <p class="parrafo">Este texto entra en vigor el 1 de enero de 2027.</p>
+  </version>
+</bloque>
+<bloque id="da" tipo="precepto" titulo="Disposición adicional primera">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="articulo">Disposición adicional primera. Medidas de seguridad.</p>
+    <p class="parrafo">1. El Esquema Nacional incluirá las medidas.</p>
+    <p class="parrafo">2. Los responsables aplicarán las medidas.</p>
+  </version>
+</bloque>
+<bloque id="dd" tipo="precepto" titulo="Disposición derogatoria única">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="articulo">Disposición derogatoria única. Derogación normativa.</p>
+    <p class="parrafo">Queda derogada la normativa anterior.</p>
+  </version>
+</bloque>
+<bloque id="df-3" tipo="precepto" titulo="Disposición final vigésima segunda">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="articulo">Disposición final vigésima segunda. Modificación de otra ley.</p>
+    <p class="parrafo">Se modifica la Ley Orgánica 5/1985, que queda redactada como sigue:</p>
+    <p class="parrafo_2">Uno. El apartado 3 del artículo treinta y nueve queda redactado como sigue:</p>
+    <p class="sangrado_2">«3. Dentro del plazo anterior, cualquier persona podrá formular reclamación.»</p>
+    <p class="parrafo_2">Dos. Se añade un nuevo artículo, con el contenido siguiente:</p>
+    <p class="sangrado_articulo">«Artículo cincuenta y ocho bis. Utilización de medios tecnológicos.</p>
+    <p class="sangrado">1. (Anulado)</p>
+    <p class="sangrado">2. Los partidos políticos podrán utilizar datos personales.»</p>
+  </version>
+</bloque>
+<bloque id="fi" tipo="firma" titulo="[firma]">
+  <version id_norma="BOE-A-2018-1" fecha_publicacion="20181206" fecha_vigencia="20181207">
+    <p class="firma_rey">Madrid, 5 de diciembre de 2018.</p>
+  </version>
+</bloque>
+</texto>
+</data>
+</response>

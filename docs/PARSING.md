@@ -1,4 +1,4 @@
-# Parsing the EU and UK texts
+# Parsing the EU, UK and Spanish texts
 
 How the downloaded XHTML becomes `Provision` records, how it is checked, and what the checks found. The code is in `src/law_assistant/parse/` (`eu_oj.py` for the Official Journal texts, `eu_consolidated.py` for the consolidated texts); run everything with `python -m law_assistant.parse.run_eu`.
 
@@ -95,3 +95,26 @@ The missing article and section numbers are exactly the repealed or not-yet-in-f
 17. **A table beside the paragraph** (section 206, the index of defined expressions) is a sibling of the paragraph, not inside it; one closing line per row.
 18. **Schedule paragraphs outside a heading group** have no title of their own; their cross-heading is kept in the `chapter` field.
 
+## The Spanish text (14 October 2026)
+
+`boe.py` reads the BOE's consolidated XML of the Ley Orgánica 3/2018 (LOPDGDD); run it with `python -m law_assistant.parse.run_boe`. It is the only text parsed *as of a date*: the file holds every dated version of each block, and the parser keeps the one in force on the date asked for (the retrieval date by default).
+
+| Text | Provisions | Numbered units | Coverage |
+|---|---|---|---|
+| LOPDGDD in force on 14 Oct 2026 | 763 (37 recitals) | 97 articles + 1 inserted (53 bis), 46 dispositions (23 additional, 6 transitional, 1 repealing, 16 final) | 100.01% |
+
+### As-of behaviour
+
+- On 6 Dec 2018 nothing is in force (the law took effect on 7 Dec 2018): no provisions. On 7 Dec 2018 there are 758.
+- 15 blocks have a second version; in every one the BOE itself attaches an editorial note saying what changed and by which law. Seventeen units differ between 2018 and now: those 15 plus two added later (Article 53 bis and Additional Disposition 23).
+- Every provision carries `in_force_from`, the date of the version used (Article 2: 16 June 2021; Article 7: 7 Dec 2018).
+
+### What the checks found in the BOE markup
+
+19. **Block ids are not citations** (`a7`, `da-2`, `df-3`), so the block `titulo` ("Artículo 7", "Disposición final tercera") gives the place.
+20. **Paragraph classes are used inconsistently**: a "1." paragraph, an "a)" point and plain text can each be `parrafo` or `parrafo_2`. Markers are therefore found by their text ("1.", "Uno.", "a)", "1.º", "–").
+21. **Quoted amendments to other laws** are `sangrado` paragraphs (their own "1." and "Artículo ..." lines are quoted text, not markers of the disposition); they are kept as closing text.
+22. **Editorial notes** (`nota_pie`, `blockquote`) describe the amendments and are not law text; they are skipped.
+23. **The preamble** is divided by Roman numerals (I to V) and is explanatory like recitals, so it becomes recitals with the path (section, n). The royal formula and the signature are skipped.
+24. **Dispositions needed a new unit**, `disposition`, with the kind and ordinal as their path (`disp-final/tercera/2`).
+25. **Bullets** ("–") have no label and are numbered `item1`, `item2` within their parent.

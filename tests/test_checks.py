@@ -168,3 +168,39 @@ def test_headings_are_counted_once_per_distinct_title_so_schedule_paragraphs_eac
     ]
     # text 8 + labels "1","2" 2 + headings "Alpha" 5 + "Beta" 4 + unit words "Schedule1" 9 (once per schedule)
     assert coverage_ratio(doc, source_characters=28, unit_words={"schedule": "Schedule"}) == 1.0
+
+
+def test_dispositions_are_counted_by_kind_and_ordinal_and_count_in_coverage_with_their_words():
+    doc = [
+        prov(
+            "es-test/disp-adicional/primera",
+            ["adicional", "primera"],
+            unit="disposition",
+            kind="article",
+            text="abcd",
+            heading="Alfa",
+        ),
+        prov(
+            "es-test/disp-adicional/primera/1",
+            ["adicional", "primera", "1"],
+            unit="disposition",
+            text="efgh",
+            heading="Alfa",
+        ),
+        prov(
+            "es-test/disp-final/única",
+            ["final", "única"],
+            unit="disposition",
+            kind="article",
+            text="ijkl",
+            heading="Beta",
+        ),
+    ]
+    assert check_structure(doc, expected_dispositions=2) == []
+    assert any("expected 3 dispositions, found 2" in p for p in check_structure(doc, expected_dispositions=3))
+    # text 12 + label "1" 1 + headings "Alfa" 4 + "Beta" 4 + words "Disposición"+kind+ordinal for the two dispositions
+    words = len("Disposicionadicionalprimera") + len("Disposicionfinalunica")
+    assert (
+        coverage_ratio(doc, source_characters=12 + 1 + 8 + words, unit_words={"disposition": "Disposicion"})
+        == 1.0
+    )
