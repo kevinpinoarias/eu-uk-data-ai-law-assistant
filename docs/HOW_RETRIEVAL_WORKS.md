@@ -143,3 +143,27 @@ The rule: every list gives each item **1 divided by (60 + its place)** points, a
 | D | not listed | 2 | 1/62 = 0.0161 |
 
 Fused order: B, A, D, C. B wins although it was first in only one list, because it was high in both. The 60 is only a smoothing number: it keeps first place from being worth far more than second, so agreement between the lists matters more than one list's first place. Nothing needs tuning. In our project the two lists are the keyword search and the embedding search, and experiment R2 tests whether fusing them finds more of the right law than either alone.
+
+## 8. What "k" means, and which models the project talks about
+
+### "k" in hit@k, recall@k and nDCG@k
+**k is how many of the top results we look at.** The search returns a ranked list; "@5" means: score only the first five results and ignore the rest. We report several because each answers a practical question: **@1** (is the very first result right? what a user sees first), **@3 and @5** (what the answer-writing model will read; @5 is our headline), **@10** (how deep a safety net goes, and how many candidates a reranker could reorder). A larger k can only find more, so recall@10 is never below recall@5. Do not confuse it with other letters named k: BM25's **k1 = 1.2** is a setting that makes repeated words count less and less, and the **60** in reciprocal rank fusion is sometimes called k too. They are unrelated. The setting "how many chunks go to the answer model" is also called top-k (experiment R9).
+
+### Three different kinds of model (the plan mentions all three)
+1. **Embedding models** turn text into vectors for search. Candidates for R4 (specifications read from the official pages on 15 October 2026; none has been run yet):
+
+| | gemini-embedding-2 (Google, hosted) | BGE-M3 (BAAI, open) | multilingual-e5-large (Microsoft researchers, open) |
+|---|---|---|---|
+| Languages | over 100 | more than 100 | 100, weaker on low-resource languages |
+| Vector length | 128 to 3,072, you choose (768, 1,536, 3,072 recommended) | 1,024 | 1,024 |
+| Longest input | 8,192 tokens | 8,192 tokens | **512 tokens (longer text is cut off)** |
+| Needs prefixes | a task prefix in the prompt, for example "task: search result \| query:" | not stated on its page | yes: "query: " and "passage: " on every text |
+| Licence or terms | Google's terms of service and prohibited-use policy; the page does not state a free tier or prices | MIT | MIT |
+| Where it runs | Google's servers (API key, a request per call) | your machine (a download; size not stated on its page) | your machine (a download; size not stated on its page) |
+
+   Also noted on Google's page: gemini-embedding-001 is the older text-only model (2,048-token limit), and the two models' vectors are incompatible, so switching means re-embedding everything.
+   **A consequence for us:** our chunks of up to 400 words are probably around 550 to 600 English tokens (my estimate, not measured, and Spanish needs more), which is over the 512-token limit of multilingual-e5, so it would silently cut the end of long chunks. This links R4 to R3 (chunk size).
+2. **A reranker** (a cross-encoder) re-scores the top candidates. No candidate has been chosen or researched yet; that happens before R5.
+3. **The answer model** (a large language model) writes the final answer from the retrieved chunks. The plan's default is Gemini 3.1 Flash-Lite, to be compared in roadmap item 4.6 with a larger Gemini Flash and with an open model (gpt-oss-120b). This is Phase 4, not retrieval.
+
+BM25 is not a model in this sense: nothing is trained, it is a counting formula.
