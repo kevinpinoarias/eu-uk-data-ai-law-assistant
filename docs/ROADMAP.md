@@ -9,21 +9,19 @@ What is done, what comes next and what is deliberately not planned. Dates are 20
 | 0. Sources and licences | Seven laws usable with conditions; the Spanish regulator's guides kept out (non-commercial licence). |
 | 1. Ingestion and chunking | 14 documents fetched politely, parsed into provisions with checks that can fail, cut into 3,831 chunks (none over 400 words). |
 | 2. Gold set and metrics | 80 bilingual questions, frozen with a fingerprint; 40 for development and 40 for one final test. A table of 19 exact figures. Metrics with paired bootstrap intervals. |
-| 3. Retrieval experiments | Keyword 0.24 recall@5; embeddings (BGE-M3, local) 0.53; context line essential; fusion, reranker, chunk sizes and version policies gave nothing detectable; a strong question-rewriter 0.70, cheap in-system rewriters not detectable. |
-| 4. Answer layer (development half) | Understand, route, exact-figure table, search, grounded answer, quotations checked in code, refusals and declines. Routing 40/40; 5/5 refusals; 4/4 figures; no detectable accuracy gain over the model's memory; checked quotations and named versions are the benefit. |
+| 3. Retrieval experiments | Keyword 0.24 recall@5; embeddings (BGE-M3, local) 0.53; context line essential; fusion, reranker, chunk sizes, version policies and jurisdiction/language filters gave nothing detectable; a strong question-rewriter 0.70, cheap in-system rewriters not detectable. |
+| 4. Answer layer (development half) | LangGraph wiring tested against the plain loop. Understand, route, exact-figure table, search, grounded answer, quotations checked in code, refusals and declines. Routing 40/40; 5/5 refusals; 4/4 figures; no detectable accuracy gain over the model's memory; checked quotations and named versions are the benefit. |
 
 ## Next, in this order
 
 1. **Measure version-aware search** (text as first published for questions dated before the 2026 amendment). Built and unit-tested; the measurement needs one day's allowance of the model's free tier.
 2. **Read the 40 test questions once**, for the chosen configuration, against the baselines. About 250 model calls. Whatever comes out is reported, including a failure.
 3. **A second independent review of the gold set** by several AI reviewers (and, if a lawyer is willing, a human), before the final write-up. Any change makes a new version of the gold set.
-4. **Install the optional LangGraph extra** and run its test (the graph is written and tested against the plain loop).
-5. **Phase 5, shipping:** a small web service and page, a Dockerfile, continuous integration, deployment to a free tier, and logging of each question's route, retrieved passages, time and cost.
+4. **Phase 5, shipping.** Built: a service layer with a rate limit and a trace of every question, a web server and a one-page interface (checked in a browser), a command-line question, and a Dockerfile (not yet built). Left: billing and a budget alert, building and measuring the image, a hosting account, and a deployment workflow. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## If time allows
 
 - A second open embedding model, to test whether the 35 % of required provisions that BGE-M3 ranks beyond 30 can be reached.
-- Jurisdiction and language filters set from the question (the question reader already finds them on 35 of 40 development questions).
 - A larger Gemini Flash model as the question rewriter and as the answer writer (needs a paid key; the free tier allows 20 requests a day for it).
 - An open answer model for comparison.
 - More cross-language test questions (the development half has three).

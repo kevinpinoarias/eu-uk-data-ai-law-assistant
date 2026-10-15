@@ -10,16 +10,35 @@ a test runs both on the same questions and compares the results.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypedDict
 
 from law_assistant.answer.pipeline import AnswerPipeline, Result
+
+
+class State(TypedDict, total=False):
+    """Every key a step may add. LangGraph merges each step's returned keys into this shared state."""
+
+    question: str
+    language: str
+    jurisdictions: tuple[str, ...]
+    as_of: str | None
+    wants_original: bool
+    route: str
+    reason: str | None
+    fact: Any
+    fell_back: bool
+    query: str
+    passages: list
+    draft: Any
+    verification: Any
+    result: Result
 
 
 def build_graph(pipeline: AnswerPipeline):
     """Compile the pipeline into a LangGraph graph (imports langgraph here, not at module load)."""
     from langgraph.graph import END, START, StateGraph
 
-    builder = StateGraph(dict)
+    builder = StateGraph(State)
     names = list(pipeline.nodes())
     for name, step in pipeline.nodes().items():
         builder.add_node(name, step)

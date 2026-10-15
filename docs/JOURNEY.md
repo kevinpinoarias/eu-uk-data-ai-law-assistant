@@ -113,6 +113,8 @@ The rule behind everything: **never trust a stage because it looks right; test i
 **What we found.** All four cheap rewriters raised recall@5 a little (0.56 to 0.64 against 0.53) but **none was detectable**: every lower bound is below zero (the best is -0.032). So the project does *not* claim the 0.70 for the system; it is an upper bound with a stronger writer. By my own rule I stopped tuning on the development half.
 **What got in the way, and what it taught.** The larger Flash model allows only 20 requests a day on the free tier, so it could not be tested. The reply to the blocked request said "retry in 9 hours 28 minutes", and my code obediently slept: the run looked frozen for 11 minutes. Both Gemini clients now stop at once and say so. The same thing may be what happened to the first embedding run. Lesson: read an error's full text, and design for limits you do not control.
 
+**One more cheap idea: filters.** If a question names the UK, why search EU text, and why search the Spanish copy of a law for an English question? Filters were tried (they need no model calls). They changed the top five for 9 to 17 of 31 questions but not the recall: even a filter using the gold labels left recall@5 at 0.53. So the missing provisions are not being pushed out by the wrong jurisdiction's text; they simply rank lower inside the right one. Decision 92: no filter.
+
 ## Phase 4: the answer layer, built and measured on the development half
 
 **The idea.** Search finds passages; the answer layer turns them into a short, sourced answer, or an honest refusal. Its steps are explained from scratch in `HOW_THE_ANSWER_LAYER_WORKS.md`: read the question, route it (look up a figure, refuse, or search), write the answer from five numbered passages with exact quotations, **check every quotation in code**, and decline when nothing valid is left.
@@ -123,6 +125,13 @@ The rule behind everything: **never trust a stage because it looks right; test i
 - **The surprise.** The same model answering from memory with no search scored 0.63. The difference (+0.05) is well inside the noise (interval -0.10 to +0.18). So this design does **not** make answers detectably more *correct*. What it adds is what the memory answer cannot give: quotations proven to exist, named provisions and text versions, refusals, and knowledge newer than the model's training (where search helped most: the date-dependent questions, 0.40 against 0.20). That is the claim the project makes, and no more.
 - **A person read the judge.** Of 12 verdicts I read, I agreed with 10; on the other two the judge was too generous. One of them showed a real flaw: asked about the law "as of the start of 2026", the system quoted the July 2026 amendment's dates as if they applied then.
 - **A repair, written and tested but not yet measured.** For questions dated before the amendment, the system now searches the text as first published, without the amending regulation, and for questions about the original wording it searches every version. The measurement is waiting for the free tier's daily allowance (500 requests) to renew.
+
+## Phase 5 groundwork: turning it into something a person can use
+
+**The idea.** A pipeline you can only run from a terminal is not a product. Wrapping it in a service means deciding who may ask how often, what happens on bad input or an error, what is logged, and what the page says.
+**Why it was built this way.** Every question costs model calls, so a public demo needs limits before it needs anything else: 6 questions a minute per visitor and 300 a day in total, a length limit, and a plain message when something fails (no internal details). Every question is logged without the visitor's address, because the log is the only way to see what people ask and why an answer failed, and the page tells the visitor so. The page itself is one file with no outside libraries, readable on a phone and in dark mode, and it states the legal disclaimer above the question box.
+**What we found.** A question embeds in 0.12 s on an ordinary CPU, so the demo does not need a graphics card. Measuring it exposed a bug that only a server would hit: the search index rewrote its 51 MB vector file after every new question; serving now keeps new question vectors in memory only.
+**What is left.** Billing, building and measuring the container image, a hosting account (see `DEPLOYMENT.md`).
 
 ## Why each major choice, in one place
 

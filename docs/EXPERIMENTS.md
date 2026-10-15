@@ -575,3 +575,50 @@ Against the stated expectations: correctness 0.45 to 0.60 for A was too low (0.6
 **Two failures found by reading; a fix written, not yet measured.** q044 shows the search offered the 2026 amending regulation to a question about the start of 2026; q048 (asked about the wording "as first published") was searched in the current text only, which hides the original wording, and was answered wrongly (the judge was right to fail it). Variant D (experiment p4_version_aware.py, pre-registered) searches the text as first published without the amending regulation for questions dated before 27 July 2026, and every version for questions about the original wording. **It has not been run**: the free tier of gemini-3.1-flash-lite allows 500 requests a day and today's allowance was used up (the client stopped at once and reported that the quota resets in about eight and a half hours). D is a tuned variant, designed from these two development failures.
 
 **What the free tier cost.** The experiments of 15 October used well over 500 requests of one model. Each full evaluation of the answer layer is about 250 model calls (answers, two judge verdicts each, a baseline), so the one confirmation on the test half needs a day's allowance on its own. A paid key would lift this; until then the confirmation has to be scheduled.
+
+
+## R6 filters, run 2026-10-15 (commit ec0c219; gold fingerprint 7d9a62f5)
+
+### R6 filters on the development questions (31 retrieval questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R4.1 BGE-M3 | 0.53 (0.37 to 0.69) | 0.46 (0.31 to 0.62) | 0.48 (0.34 to 0.62) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.78) |
+| F1 gold jurisdictions (upper bound) | 0.53 (0.37 to 0.69) | 0.49 (0.34 to 0.64) | 0.50 (0.37 to 0.64) | 0.61 (0.45 to 0.77) | 0.67 (0.51 to 0.82) |
+| F2 jurisdictions from the text | 0.53 (0.37 to 0.69) | 0.49 (0.34 to 0.64) | 0.50 (0.37 to 0.64) | 0.61 (0.45 to 0.77) | 0.67 (0.51 to 0.82) |
+| F3 language | 0.53 (0.37 to 0.69) | 0.40 (0.27 to 0.55) | 0.44 (0.32 to 0.58) | 0.61 (0.45 to 0.77) | 0.62 (0.46 to 0.77) |
+| F4 jurisdictions and language | 0.56 (0.40 to 0.73) | 0.46 (0.32 to 0.61) | 0.48 (0.35 to 0.61) | 0.65 (0.48 to 0.81) | 0.65 (0.49 to 0.81) |
+
+F1 gold jurisdictions (upper bound) against R4.1, recall@5: difference +0.000, 95 % interval +0.000 to +0.000; top-5 changed for 9 of 31 questions.
+F2 jurisdictions from the text against R4.1, recall@5: difference +0.000, 95 % interval +0.000 to +0.000; top-5 changed for 9 of 31 questions.
+F3 language against R4.1, recall@5: difference +0.000, 95 % interval +0.000 to +0.000; top-5 changed for 13 of 31 questions.
+F4 jurisdictions and language against R4.1, recall@5: difference +0.032, 95 % interval +0.000 to +0.097; top-5 changed for 17 of 31 questions.
+
+Recall@5 by question language (R4.1, F1, F2, F3, F4; number of questions):
+
+- en: 0.51, 0.51, 0.51, 0.51, 0.57 (n = 17)
+- es: 0.55, 0.55, 0.55, 0.55, 0.55 (n = 14)
+
+Recall@5 by jurisdiction group (R4.1, F1, F2, F3, F4; number of questions):
+
+- ES: 0.75, 0.75, 0.75, 0.75, 0.75 (n = 4)
+- EU: 0.54, 0.54, 0.54, 0.54, 0.59 (n = 20)
+- EU+UK: 0.31, 0.31, 0.31, 0.31, 0.31 (n = 4)
+- EU+UK+ES: 0.50, 0.50, 0.50, 0.50, 0.50 (n = 1)
+- UK: 0.50, 0.50, 0.50, 0.50, 0.50 (n = 2)
+
+## Reading R6 filters (15 October 2026)
+
+**No filter is adopted.** The filters cost nothing (no model calls) and are easy to explain, so they were worth testing, but on the 31 development questions none has a lower paired bound above 0 on recall@5.
+
+| Filter | recall@5 | paired difference | interval | MRR | recall@10 | questions whose top 5 changed |
+|---|---|---|---|---|---|---|
+| none (R4.1) | 0.53 | none | none | 0.46 | 0.63 | none |
+| F1 gold jurisdictions (upper bound) | 0.53 | +0.000 | +0.000 to +0.000 | 0.49 | 0.67 | 9 |
+| F2 jurisdictions read from the text | 0.53 | +0.000 | +0.000 to +0.000 | 0.49 | 0.67 | 9 |
+| F3 language | 0.53 | +0.000 | +0.000 to +0.000 | 0.40 | 0.62 | 13 |
+| F4 both | 0.56 | +0.032 | +0.000 to +0.097 | 0.46 | 0.65 | 17 |
+
+**What it says.** The filter that uses the gold labels (an upper bound for any jurisdiction filter) did no better in recall@5 than the one that reads the question, and neither moved it at all: the filters change the top five for 9 of 31 questions but not how many required provisions are in it. So the required provisions are not being crowded out by text from the wrong jurisdiction; what is missing is ranked below the right jurisdiction's own text. The language filter alone lowered MRR (0.46 to 0.40), perhaps because the other-language copy of a provision was sometimes the better-ranked one. F4's +0.032 has an interval that starts at exactly 0.000, so it is not shown. This matches the pattern since BGE-M3 arrived: tidying what the search is allowed to return changes little; the gains came from the question's wording (R6 rewriting) and from the context line in each chunk.
+
+The stated expectations: "F1 raises recall@5 by a few points" did not hold (0.000); "F2 gets part of it" is moot; "F3 changes little" held for recall@5 and not for MRR; "no filter has a lower paired bound above 0" held. A reminder that the jurisdiction groups are small (UK 2 questions, EU+UK 4).

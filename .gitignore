@@ -48,3 +48,7 @@ Thumbs.db
 # --- Private planning documents: never commit ---------------------------
 *Roadmap*.pdf
 private/
+
+# Local tool settings
+.claude/
+data/traces/

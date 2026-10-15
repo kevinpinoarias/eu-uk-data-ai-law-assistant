@@ -50,7 +50,7 @@ Regulator guidance, case law and adjacent laws come in later tiers. See [SOURCES
 | 2. Gold question set | 80 bilingual questions with the correct articles, a table of exact facts and the metrics, frozen before any experiment. Done (not lawyer-reviewed) |
 | 3. Retrieval experiments | Keyword, embeddings and hybrid; chunking; reranking; question rewriting. Pre-registered, judged by recall@k, MRR and nDCG with bootstrap intervals. Development half measured; a second embedding model and filters are open |
 | 4. Answer layer ([plan](docs/PHASE4_PLAN.md), [how it works](docs/HOW_THE_ANSWER_LAYER_WORKS.md)) | Understand, route, look up exact figures, retrieve, answer with quotations checked in code, or refuse or decline. Built and measured on the development half; version-aware search built, not yet measured; test half not yet read |
-| 5. Ship | API, interface, Docker, CI, deployment and retrieval traces. Not started |
+| 5. Ship | Service layer with rate limit and traces, web page and server, Dockerfile: built (the image is not built yet). Deployment: not started ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)) |
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for what is done, what is next and what is not planned.
 
@@ -78,6 +78,8 @@ python -m law_assistant.retrieval.get_reranker  # optional, 2.3 GB, only for the
 ```
 
 Without a graphics card install the CPU build of PyTorch instead and expect slower embedding. The saved vectors are not in the repository and are rebuilt from the chunks.
+
+**Try it.** `python -m law_assistant.serve --demo` serves the web page with canned answers (no model, no key) at http://127.0.0.1:8000; without `--demo` it loads the real pipeline. `python -m law_assistant.ask "your question"` asks one question from the command line. Deployment notes: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 **Optional: the answer layer.** It calls Google's Gemini API (`gemini-3.1-flash-lite`) for routing and for writing answers. Put `GEMINI_API_KEY` in `.env` (never commit it). The free tier allows about 500 requests a day for this model, which is enough for exploring but not for a full evaluation; the clients stop at once and say so when a quota is used up. To draw the pipeline as a LangGraph graph: `python -m pip install -e ".[agent]"`.
 

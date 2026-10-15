@@ -280,3 +280,19 @@ def test_the_embedding_client_also_fails_at_once_when_the_quota_resets_in_hours(
     with pytest.raises(EmbeddingError, match="quota"):
         embedder.embed_texts(["a"])
     assert sleeps == [] and len(calls) == 1
+
+
+def test_a_serving_index_keeps_new_question_vectors_in_memory_and_never_rewrites_the_store(tmp_path):
+    DenseIndex(CHUNKS, FakeEmbedder(), tmp_path / "v")  # the chunk vectors are saved once
+    saved = (tmp_path / "v.f32").read_bytes()
+    index = DenseIndex(CHUNKS, FakeEmbedder(), tmp_path / "v", persist_queries=False)
+    assert index.search("breach", 1) == ["breach"]
+    assert index.search("breach", 1) == ["breach"]  # the second call is answered from memory
+    assert (tmp_path / "v.f32").read_bytes() == saved  # nothing was written for the question
+
+
+def test_by_default_a_new_question_vector_is_saved_so_experiments_can_resume(tmp_path):
+    index = DenseIndex(CHUNKS, FakeEmbedder(), tmp_path / "v")
+    before = (tmp_path / "v.f32").stat().st_size
+    index.search("erasure", 1)
+    assert (tmp_path / "v.f32").stat().st_size > before

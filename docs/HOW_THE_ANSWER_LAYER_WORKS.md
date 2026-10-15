@@ -8,7 +8,7 @@ Retrieval (see `HOW_RETRIEVAL_WORKS.md`) finds passages of law. The **answer lay
 
 **In this project.** The model is `gemini-3.1-flash-lite`. It writes the answer from five numbered passages. Plain code, not the model, decides whether to answer, looks up exact figures, checks every quotation and refuses what must not be answered.
 
-**The basics applied.** The pipeline has these boxes in this order: understand, route, (look up a figure | refuse | retrieve, write, verify), and finish. The same boxes are drawn as a LangGraph graph in `answer/graph.py` and tested against the plain loop (the test is skipped until the optional LangGraph extra is installed).
+**The basics applied.** The pipeline has these boxes in this order: understand, route, (look up a figure | refuse | retrieve, write, verify), and finish. The same boxes are drawn as a LangGraph graph in `answer/graph.py` (LangGraph 1.2.15) and tested against the plain loop: both give identical results on an answer, a table figure and a refusal.
 
 ```
 question -> [1 understand] -> [2 route] --refuse--------------------------------> refusal
@@ -79,7 +79,7 @@ The differences are small compared with the noise of 31 questions: the 95 % inte
 - **Version-aware search** (above) is built and tested but not measured: the free tier of the model allows 500 requests a day and the day's allowance was used up. It needs one more run, then the same questions' verdicts re-read.
 - **The test half** (40 questions nobody has tuned on) is read once, for the chosen configuration. A full run is about 250 model calls.
 - **The rewriting step** (see `EXPERIMENTS.md`, R6): a strong writer lifts search recall@5 from 0.53 to 0.70, but the cheap in-pipeline models did not show a detectable gain, so the live pipeline does not rewrite yet.
-- **LangGraph** is wired in `answer/graph.py` as an optional extra; it needs to be installed to run its test.
+- **LangGraph** is wired in `answer/graph.py` as an optional extra and its tests pass. The first run failed because a plain `dict` cannot be the graph's state (LangGraph needs named keys it can merge), which the skipped test had been hiding; the state is now a typed dictionary.
 - **Not legal advice and not lawyer-reviewed.** The gold answers were drafted by an AI assistant, checked by scripts and by AI reviews.
 
 ## Words used here
