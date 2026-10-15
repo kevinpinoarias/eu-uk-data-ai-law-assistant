@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "frozen": "2026-10-15",
+  "sha256": "7d9a62f5977c9f84c0fc2106c1cdfc976f2a383c570f2f9f8033ecb4f6ea288b",
+  "questions": 80,
+  "seed": 20261015,
+  "split": {
+    "dev": 40,
+    "test": 40
+  },
+  "by_type": {
+    "as_of": 10,
+    "comparison": 10,
+    "cross_reference": 10,
+    "definition": 8,
+    "lookup": 16,
+    "numeric": 8,
+    "refuse": 10,
+    "spanish_law": 8
+  },
+  "retrieval_questions": {
+    "dev": 31,
+    "test": 31
+  },
+  "review": "Drafted by an AI assistant and checked by scripts against the parsed corpus (every unit, pinpoint and quote exists; no question copies its answer; figures agree with the facts table). Independently reviewed by five separate AI reviewer passes that saw only the question, the expected answer and the cited provision text (first draft: 15 questions fine, 53 with minor findings, 12 with major findings); each finding was verified against the corpus and fixed where it held before this freeze. NOT reviewed by a qualified lawyer, and the legal content has not been reviewed by a person."
+}

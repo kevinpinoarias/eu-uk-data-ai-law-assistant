@@ -25,3 +25,7 @@ Retrieval returns a ranked list, so it is scored on the list: **hit@k** (was a c
 ## Decision rule for Phase 3
 
 Judge each variant by the change in the metric against its baseline on the development half, with the paired interval; count the variants tried; touch the test half once per decision.
+
+## A rule for the gold that the metrics impose
+
+The gold provisions of one question must be satisfiable by different chunks. If one chunk holds two of them, one chunk is credited with one provision, and even a perfect ranking cannot score nDCG 1. The oracle test in `tests/test_metrics_real.py` checks this on the committed set and failed once, for q019, where the acceptable Article 3(66) shared a chunk with the primary Article 3(63); the redundant gold entry was dropped.

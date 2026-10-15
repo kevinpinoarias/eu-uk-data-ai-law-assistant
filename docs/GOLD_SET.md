@@ -79,6 +79,26 @@ All 80 now pass the checks and match the plan exactly (16 lookups, 8 definitions
 
 **What this changes about the plan.** One reason for Kevin to write 15 questions was to reduce the risk that the author of the system also shapes the test. That is no longer fully met: Claude wrote all 80. The mitigation is Kevin's review of all 80, and he may rewrite or replace any question; any he writes himself will carry `author: kevin`.
 
+## Independent review and the freeze (15 October 2026)
+
+**The review.** Five separate AI reviewer passes, each given 16 questions, saw only the question, the expected answer and the text of the cited provisions (not the drafting notes), were told to be skeptical and to mark any concern that rested on outside knowledge, and could edit nothing. On the first draft they found 15 questions fine, 53 with minor findings and 12 with major findings. Every finding was checked against the corpus before it was adopted; none was adopted on trust.
+
+**What the reviewers caught that the scripts could not:**
+
+- the as-of question on the original bias-detection rule (original Article 10(5)) was built on a false premise: that Article was not yet applicable on its date, and the Omnibus replaced it before it ever applied, so the question is now about the wording as published;
+- the UK "malicious person" in Article 17(1)(g) is a narrowly defined term (convicted of listed harassment or stalking offences, or subject to a stalking protection order), not any spiteful accuser;
+- work email and digital devices are covered by LOPDGDD Article 87, not Article 89 (video surveillance), which the refusal answer had cited;
+- the EU GDPR has its own rule that research, archiving and statistics are not incompatible further processing (Article 5(1)(b)), so the comparison with the UK's Article 8A overstated the difference;
+- several answers relied on provisions that were not in the gold, or left out conditions in the cited text (the processor contract, the 72-hour notification, the research safeguards, the high-risk classification), and some questions lacked a jurisdiction cue.
+
+**What was not adopted.** Gold provisions on refusal questions (the schema says a refusal has none); claims resting on law outside the corpus that could not be verified (for example a proposed amendment of the GDPR's 250-employee threshold, and the name of the Act that inserted the UK erasure ground), which are noted in the questions instead; the reason for the 2018 wording change of Article 37(1)(c), which the text does not state.
+
+**One design lesson.** Two gold provisions of the same question that fall in one chunk cap the best achievable nDCG below 1, because one chunk is credited with one provision. The oracle test (a ranking built from the gold must score 1 on every question) caught this once, in q019, and now guards it.
+
+**The freeze.** `eval/gold/MANIFEST.json` records the SHA-256 fingerprint of the whole set, the date, the seed (20261015, fixed before any result was looked at and never re-drawn), the counts and the review statement. The split is 40 development and 40 test, balanced within every type and language, with exactly 31 retrieval questions in each half. A test that runs in CI fails on any edit to the set. To change a question, make a new version: edit the set, re-split only if the plan says so, write a new manifest with version 2, and treat results from version 1 as not comparable.
+
+**The label that goes with it.** Drafted by an AI assistant, checked by scripts, independently reviewed by five AI passes, and not reviewed by a qualified lawyer or by a person for its legal content. The expected answers are reference statements of the key points, not exhaustive treatments.
+
 ## Status
 
-Steps 2.0 (schema and checks), 2.1 (drafting), 2.3 (the structured table, `docs/FACTS.md`) and 2.4 (the metrics, `docs/METRICS.md`) are done: 80 of 80 questions written and checked, every gold provision reachable by a real chunk, and scoring and intervals tested. Pending Kevin's review (accept, change or drop each). Next: 2.5 the split and freeze (40 and 40, stratified by type and language, with a recorded seed; with 62 retrieval questions each half has about 31, which limits how small a difference can be detected).
+Phase 2 is complete: the schema and checks, 80 questions (reviewed and frozen on 15 October 2026), the table of 19 exact facts, the metrics, and the split. The set is approved for use. A further round of independent review is planned near the end of the project, before the final write-up; any change that comes out of it makes a new version of the set (decision 67). Next: Phase 3, embeddings and the vector index, then experiments R1 to R7 against the development half, with the test half used once per decision.
