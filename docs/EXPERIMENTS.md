@@ -256,3 +256,102 @@ Each variant against R3.1 on recall@5 (paired bootstrap), with the size of its i
 - R3.5 cap 400, no context line: difference -0.161 (95 % interval -0.315 to -0.016); 3,831 chunks, mean 218 words
 
 **Reading R3 with BGE-M3.** Nothing is adopted for chunk size: no cap beats 400 detectably (cap 200 +0.040 with an interval of -0.089 to +0.177; cap 300 +0.008; cap 600 -0.056 with an interval of -0.137 to +0.008). Against the stated expectations: "recall@5 does not improve detectably with smaller chunks" held; "cap 600 is not better" held; "leaving the context line out lowers recall@5" held, and it is the first detectable effect in Phase 3: recall@5 falls from 0.53 to 0.37, a paired difference of -0.161 with an interval of -0.315 to -0.016 that excludes 0. The context line ("GDPR | Chapter II | Article 6: Lawfulness of processing") is the part of a chunk that tells the embedding model which law and which article it is reading, and a lay question matches that heading. With BM25 the same removal moved recall@5 by only -0.027 (not detectable), so the line matters much more to an embedding model. Cap 200 is the only size that looks slightly better and costs 64 % more chunks, so it is left as a candidate for the final configuration and is not adopted.
+
+
+## R5 reranker, run 2026-10-15 (commit 2facbe9; gold fingerprint 7d9a62f5)
+
+### R5 reranker (bge-reranker-v2-m3) over BGE-M3 on the development questions (31 retrieval questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R4.1 BGE-M3 | 0.53 (0.37 to 0.69) | 0.46 (0.31 to 0.62) | 0.48 (0.34 to 0.62) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.78) |
+| R5.1 rerank top 30 | 0.52 (0.36 to 0.68) | 0.46 (0.33 to 0.61) | 0.47 (0.36 to 0.59) | 0.65 (0.48 to 0.81) | 0.64 (0.49 to 0.79) |
+| R5.2 rerank top 50 | 0.53 (0.37 to 0.68) | 0.43 (0.30 to 0.57) | 0.45 (0.34 to 0.57) | 0.68 (0.52 to 0.84) | 0.65 (0.51 to 0.79) |
+
+R5.1 (top 30) against R4.1, recall@5: difference -0.011, 95 % interval -0.151 to +0.129; share of resamples in which the reranker is not better 0.58.
+R5.2 (top 50) against R4.1, recall@5: difference -0.003, 95 % interval -0.142 to +0.137; share of resamples in which the reranker is not better 0.52.
+R5.2 (top 50) against R5.1 (top 30), recall@5: difference +0.008, 95 % interval +0.000 to +0.024; share of resamples in which depth 50 is not better 0.36.
+
+Latency per question on this machine (GTX 1060, half precision): first stage alone 0.12 s; with reranker over the top 30 3.83 s; over the top 50 5.91 s.
+Scored pairs cut at 512 tokens: 436 of 1550 (the top 50 candidates of 31 questions).
+
+Recall@5 by question type (R4.1 BGE-M3, R5.1 top 30; number of questions):
+
+- as_of: 0.40, 0.47 (n = 5)
+- comparison: 0.35, 0.42 (n = 5)
+- cross_reference: 0.40, 0.40 (n = 5)
+- definition: 0.44, 0.44 (n = 4)
+- lookup: 0.75, 0.62 (n = 8)
+- spanish_law: 0.75, 0.75 (n = 4)
+
+Recall@5 by question language (R4.1 BGE-M3, R5.1 top 30; number of questions):
+
+- en: 0.51, 0.53 (n = 17)
+- es: 0.55, 0.51 (n = 14)
+
+Recall@5 by shared words with its gold text (R4.1 BGE-M3, R5.1 top 30; number of questions):
+
+- shares few words: 0.59, 0.54 (n = 19)
+- shares many words: 0.44, 0.49 (n = 12)
+
+
+## Diagnostic: why the reranker did not help, run 2026-10-15 (commit 2facbe9; gold fingerprint 7d9a62f5)
+
+### Why R5.1 did not beat BGE-M3 (31 development questions; the primary provisions BGE-M3 ranks within its top 30: 35)
+
+- all: 35 provisions; in the top 5 before 24, after 22 (moved in 5, moved out 7); median rank gain +0.0
+- pair cut at 512 tokens: 8 provisions; in the top 5 before 4, after 4 (moved in 3, moved out 3); median rank gain +2.0
+- pair not cut: 27 provisions; in the top 5 before 20, after 18 (moved in 2, moved out 4); median rank gain +0.0
+
+
+## R6 question rewriting, run 2026-10-15 (commit 2facbe9; gold fingerprint 7d9a62f5)
+
+### R6 question rewriting on the development questions (31 retrieval questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R4.1 BGE-M3 | 0.53 (0.37 to 0.69) | 0.46 (0.31 to 0.62) | 0.48 (0.34 to 0.62) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.78) |
+| R6.1 replace | 0.68 (0.54 to 0.81) | 0.65 (0.50 to 0.79) | 0.59 (0.47 to 0.71) | 0.81 (0.65 to 0.94) | 0.75 (0.61 to 0.88) |
+| R6.2 append | 0.70 (0.56 to 0.84) | 0.59 (0.45 to 0.73) | 0.56 (0.44 to 0.68) | 0.81 (0.68 to 0.94) | 0.75 (0.61 to 0.88) |
+
+R6.1 (replace) against R4.1, recall@5: difference +0.148, 95 % interval +0.030 to +0.282; share of resamples in which the rewrite is not better 0.01.
+R6.2 (append) against R4.1, recall@5: difference +0.169, 95 % interval +0.040 to +0.315; share of resamples in which the rewrite is not better 0.00.
+
+Rewrite length in words: mean 30.1, longest 43; 2 of 31 exceed the 40 the agent was asked to stay under.
+
+Recall@5 by question type (R4.1, R6.1 replace, R6.2 append; number of questions):
+
+- as_of: 0.40, 0.47, 0.60 (n = 5)
+- comparison: 0.35, 0.40, 0.40 (n = 5)
+- cross_reference: 0.40, 0.50, 0.50 (n = 5)
+- definition: 0.44, 0.69, 0.69 (n = 4)
+- lookup: 0.75, 1.00, 1.00 (n = 8)
+- spanish_law: 0.75, 0.88, 0.88 (n = 4)
+
+Recall@5 by question language (R4.1, R6.1 replace, R6.2 append; number of questions):
+
+- en: 0.51, 0.74, 0.79 (n = 17)
+- es: 0.55, 0.61, 0.59 (n = 14)
+
+Recall@5 by shared words with its gold text (R4.1, R6.1 replace, R6.2 append; number of questions):
+
+- shares few words: 0.59, 0.68, 0.74 (n = 19)
+- shares many words: 0.44, 0.67, 0.65 (n = 12)
+
+## Reading R5, the reranker diagnostic and R6 (15 October 2026)
+
+**R5, the reranker: nothing is adopted, and the stated expectation failed.** I expected the reranker to raise recall@5 above 0.53 with a lower paired bound above 0 (staying below the ceiling of about 0.65). It did not move: reranking BGE-M3's top 30 gave recall@5 0.52 (paired difference -0.011, interval -0.151 to +0.129) and the top 50 gave 0.53 (-0.003, interval -0.142 to +0.137). Depth 50 against depth 30 is +0.008 (interval +0.000 to +0.024), which is practically nothing. Per-question speed on this machine: 0.12 s for BGE-M3 alone, 3.83 s with the reranker over the top 30, 5.91 s over the top 50, about 32 and 49 times slower, for no detectable gain. One pattern is worth recording and not worth building on: hit@5 (is at least one required provision in the top 5) went 0.61, 0.65, 0.68, while MRR went 0.46, 0.46, 0.43. The reranker sometimes brings in a first right answer but pushes others out; none of these differences is detectable with 31 questions.
+
+**Why: the diagnostic ruled out one explanation.** 436 of the 1,550 scored pairs (28 %) were longer than the reranker's 512-token limit, so the end of a long chunk was cut. If that were the cause, cut pairs would do worse. They did not: among the 35 primary provisions that BGE-M3 ranks within its top 30, the 8 whose pair was cut stayed at 4 in the top 5 (moved in 3, out 3), and the 27 uncut ones went from 20 to 18 (in 2, out 4). Overall 24 before, 22 after (moved in 5, out 7). So the reranker is not failing because of the cut; it simply re-orders about as well as BGE-M3 already does on these questions. I have not tested why (for example, preferring other relevant-looking articles to the ones the gold set requires); that stays an open question and no longer-limit variant was run.
+
+**R6, rewriting the question: the first clearly detectable gain from a retrieval change.** Thirty-one rewrites were written beforehand by a separate agent that saw only the question texts (no gold set, no corpus, no tools; the prompt is in `eval/rewrites/README.md`), then searched with BGE-M3 unchanged.
+
+- R6.1 (rewrite alone): recall@5 0.68 (0.54 to 0.81), paired difference +0.148, interval +0.030 to +0.282.
+- R6.2 (question followed by the rewrite): recall@5 0.70 (0.56 to 0.84), paired difference +0.169, interval +0.040 to +0.315.
+- hit@5 rose from 0.61 to 0.81 for both; MRR from 0.46 to 0.65 (replace) and 0.59 (append).
+
+Against the stated expectations: "raises recall@5 above 0.53" held, and the lower bound did not include 0 (I had said it might). "Most for lay-worded questions that share few words with their gold text" did **not** hold: those went 0.59 to 0.68 (replace) and 0.74 (append), while the questions that already share many words went 0.44 to 0.67 and 0.65, a bigger jump. "R6.2 sits between R4.1 and R6.1" did not hold either: on recall@5 it is slightly above R6.1, on MRR below. "Rewrites could hurt date- and version-dependent questions" did not show: as_of went 0.40 to 0.47 (replace) and 0.60 (append). By language: English 0.51 to 0.74 and 0.79; Spanish 0.55 to 0.61 and 0.59, a much smaller gain. By type: lookup 0.75 to 1.00, definition 0.44 to 0.69, comparison 0.35 to 0.40 (unchanged within noise).
+
+**Decision rule applied.** Both variants have a lower bound above 0, so both qualify; the rule keeps the higher recall@5, which is R6.2 (0.70 against 0.68). The two intervals overlap almost completely, so the data do not show that append beats replace; replace has the better MRR. R6.2 is carried forward as the working configuration.
+
+**What this does and does not show.** It shows an automatic rewriter of this kind (a strong language model that sees only the question) can lift the first search from 0.53 to about 0.70 on the development questions. It does not show it on the test half (rewrites for the test questions have not been made; they will be made by the same prompt, once, when the pipeline is confirmed). It costs one language-model call per question in the final assistant, whose latency and price are not measured here. The rewriting model knows a lot of law, so the gain is partly that model's knowledge; that is the point of the step but it means the result depends on the model chosen. Two rewrites ran over the 40-word limit it was given (longest 43 words); they were not edited. Thirty-one questions is a small sample.

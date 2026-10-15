@@ -2,7 +2,7 @@
 
 A bilingual (English and Spanish) retrieval-augmented assistant for EU, Spanish and UK data-protection and AI law. It aims to answer questions with verified citations, say when it does not know, and measure every design choice instead of assuming it.
 
-> **Status: building (October 2026).** Fetching, parsing, chunking, the frozen 80-question test set, the facts table, the evaluation metrics and the first retrieval experiments are done; embedding-based retrieval is in progress and the answer layer is planned. For a plain-words walk through every step and why it was taken, see [docs/JOURNEY.md](docs/JOURNEY.md). It is not legal advice.
+> **Status: building (October 2026).** Fetching, parsing, chunking, the frozen 80-question test set, the facts table, the evaluation metrics and the first retrieval experiments are done; embedding retrieval with the open BGE-M3 model and a question-rewriting step have been measured on the development half (recall@5 from 0.24 with keyword search to 0.53, and about 0.70 with rewriting); a confirmation on the test half and the answer layer are next. For a plain-words walk through every step and why it was taken, see [docs/JOURNEY.md](docs/JOURNEY.md). It is not legal advice.
 
 ## Why this project
 
@@ -56,6 +56,7 @@ Copy `.env.example` to `.env` and set `FETCHER_CONTACT` before running any fetch
 python -m pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cu126
 python -m pip install -e ".[open-embeddings]"
 python -m law_assistant.retrieval.get_bge
+python -m law_assistant.retrieval.get_reranker  # optional, 2.3 GB, only for the reranker experiment (R5)
 ```
 
 Without a graphics card install the CPU build of PyTorch instead and expect slower embedding. The saved vectors are not in the repository and are rebuilt from the chunks.

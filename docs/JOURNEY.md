@@ -86,6 +86,45 @@ The rule behind everything: **never trust a stage because it looks right; test i
 - Tidying the index (which version of a text to keep, merging duplicate copies, chunk sizes) still changes nothing detectable. The real remaining problem is ranking: a diagnostic shows only 44 % of required provisions sit in the top 5, 65 % in the top 30 and 89 % in the top 100.
 **What that implies.** A reranker (a slower second-pass scorer) could at best lift provisions that are already in the top 30, so its gain is capped at about 21 points, and the provisions beyond rank 30 need a better first search (another model, or a rewritten question).
 
+## Phase 3, continued: does a second look help? (R5, the reranker)
+
+**The idea.** The first search compares a summary of the question with a summary of each chunk, which is fast but coarse. A **reranker** reads the question and one chunk *together* and gives that pair a score, which is sharper but slow: one model run per candidate. So it is used as a second pass over the first search's top 30 and re-orders them.
+**Why we tried it, and what we checked first.** The rank-depth diagnostic (above) showed that a reranker can only reorder what the first search already retrieved, so it could add about 21 points at most. We asked your approval before downloading it (2.27 GB, Apache-2.0), tested it on the real card, and wrote the plan and decision rule before running it.
+**What we found.**
+- **No gain.** recall@5 was 0.52 (top 30) and 0.53 (top 50), against 0.53 without it; the paired difference was -0.011 with an interval of -0.151 to +0.129, so it could be a little better or a little worse, and there is no evidence it is better.
+- **A lot slower.** 0.12 s per question without it, 3.83 s over the top 30, 5.91 s over the top 50 (32 to 49 times).
+- **We checked the obvious excuse.** 28 % of the pairs were longer than the model's 512-token limit and got cut. If that were the cause, cut pairs would do worse. They did not (4 of 8 required provisions in the top 5 before and after), so the cut is not why it did not help. We do not know why; the honest entry is "not explained".
+- **A reminder about expectations.** The plan said it would probably help. It did not. Writing the expectation down first is what lets us say so plainly. Decision 82: not adopted; the code stays as an optional experiment.
+
+## Phase 3, continued: rewriting the question (R6)
+
+**The idea.** People ask "do I need to name a person responsible for data protection?" and the law says "designate a data protection officer". A rewrite step turns the first into the second before searching, using a language model that knows the legal vocabulary. The model sees only the question, never the answers.
+**Why it was tested this way.** The first draft of this idea was for you to rewrite the questions by hand. You know the gold answers, so your rewrites would drift toward the right articles and flatter the result. Instead a separate agent got only the 31 question texts (no gold set, no files, no tools) and a fixed set of instructions (same language, legal terms, no article numbers, at most 40 words). Its 31 rewrites were saved before anything was scored (`eval/rewrites/`).
+**What we found.**
+- recall@5 rose from 0.53 to 0.68 (rewrite alone) and 0.70 (question followed by the rewrite). Both gains are detectable: the paired intervals (+0.030 to +0.282 and +0.040 to +0.315) exclude 0. This is the first clear gain since switching to embeddings.
+- hit@5 rose from 0.61 to 0.81: for four questions in five, at least one required provision is now in the top five.
+- Two of our guesses were wrong: the gain was **not** bigger for the questions that share few words with the law (+0.09 against +0.23 for the ones that share many), and the date-dependent questions were not hurt.
+- English questions gained far more (0.51 to 0.79) than Spanish ones (0.55 to 0.59).
+**What it costs and what is still open.** In the final assistant this is one extra language-model call per question, whose time and price we have not measured. The 31 rewrites come from a strong model that knows a lot of law, so part of the gain is that knowledge. The result is on the development half only: rewrites for the test half will be made once, with the same instructions, when we confirm the whole pipeline. Decision 83.
+
+## Why each major choice, in one place
+
+| Choice | Why | What showed it |
+|---|---|---|
+| Use seven laws, leave out the regulator's guides | Licence terms: the guides are non-commercial, which clashes with an open project | `SOURCES.md` |
+| Official API and polite fetchers; never get past a bot check | The sites are public services; hiding who we are is rude and risky | EUR-Lex bot challenge, so the official API |
+| Parse with checks that can fail | A parser fails quietly; a dropped article never complains | Annex VI body lost, 36 chunks of dots |
+| Chunk by the law's structure, 400-word cap | A piece must mean something alone and be small enough to find precisely | 3,831 chunks, none over 400 words |
+| Put a context line (law, chapter, article, title) in each chunk | It tells the embedding model what it is reading | Without it recall@5 falls from 0.53 to 0.37 |
+| Write and freeze 80 gold questions before experimenting | A test written after the system flatters the system | Five blind reviewers found 12 serious problems in the draft |
+| A table for exact figures | A model can misread or mis-copy a number | Every figure checked against its provision |
+| recall@5 as the main score, with paired intervals | The answer-writing model sees about five chunks; 31 questions is few | `METRICS.md` |
+| BGE-M3 on your own card, not Google's free tier | The free tier slowed to a stop after 640 of 3,304 vectors; the local model has no key, no limit, no cost | recall@5 0.24 (keyword) to 0.53 |
+| No hybrid keyword + embedding merge | The equal-weight merge let the weak keyword list drag down the strong one | 0.43 against 0.53; the plan forbade tuning until it won |
+| Keep all versions and do not collapse copies | Neither changed anything detectable | R8 and R10 with both searches |
+| No reranker | No gain for 32 to 49 times the time | R5: 0.52 against 0.53 |
+| A question-rewriting step | The gap between everyday and legal wording was the main failure | R6: 0.53 to 0.70 |
+
 ## What the process has taught us so far
 
 1. **Checks that can fail beat checks that cannot.** Every serious bug (a dropped annex, dotted "law", a wrong article in a gold answer) was found by a check or a review, not by looking.
@@ -95,7 +134,10 @@ The rule behind everything: **never trust a stage because it looks right; test i
 5. **Keep the labels honest.** The gold set is not lawyer-reviewed, and every provisional result says so.
 6. **Look where the failures are before choosing a fix.** The rank-depth diagnostic showed what a reranker can and cannot do before any reranker was downloaded.
 7. **A rule that forbids tuning is worth having.** Fusion lost, and the plan did not let us hunt for weights until it won.
+8. **A better tool in theory still has to win the measurement.** The reranker is standard practice and was a good bet; here it gave nothing and cost 32 times the time. We checked the obvious excuse (the cut) instead of assuming it.
+9. **The wording of the question mattered more than the machinery.** Rewriting the question moved recall@5 by 17 points; chunk sizes, version policies, duplicate collapsing, fusion and a reranker together moved it by nothing detectable.
+10. **Keep the person who knows the answers away from the test.** The rewrites came from an agent that saw only the questions, for the same reason the gold set was frozen first.
 
 ## Where we are now
 
-Phases 0 to 2 are complete and committed. Phase 3 has its harness, a keyword baseline, three provisional BM25 experiments and the code for embeddings and fusion. The embedding run and the open-model option are the next steps; the answer layer is planned in `PHASE4_PLAN.md`.
+Phases 0 to 2 are complete and committed. Phase 3 has measured keyword search (recall@5 0.24), BGE-M3 (0.53), fusion (worse), chunking and index variants (nothing detectable), a reranker (nothing) and a question-rewriting step (0.70 on the development half). Still to do in Phase 3: perhaps a second embedding model, whether rewriting and filters (jurisdiction, language, date) combine, how many chunks to hand the answer model (R9), and one confirmation of the chosen pipeline on the test half. Then the answer layer, planned in `PHASE4_PLAN.md`.

@@ -70,19 +70,21 @@ So "designate" counts nine times what "the" does. The formula is checked in `tes
 | W | | 1/62 = 0.01613 | 0.01613 |
 | Z | 1/63 = 0.01587 | | 0.01587 |
 
-The fused order is Y, X, W, Z: Y wins by being second in one list and first in the other. **Here:** R2 asks whether this helps on legal text. Not yet run.
+The fused order is Y, X, W, Z: Y wins by being second in one list and first in the other. **Here:** R2 asked whether this helps on legal text. With BGE-M3 it did not: merging keyword and embedding lists gave recall@5 0.43 against 0.53 for the embeddings alone, because the weak keyword list dragged the strong one down.
 
 ## 4. Reranking
 
 **Generic.** An embedding model (a **bi-encoder**) reads the question and each chunk separately, which is why the chunk vectors can be computed once in advance. A **reranker** (a **cross-encoder**) reads the question and one chunk *together* and outputs a relevance score, which is more accurate because it can compare them word by word. The price: nothing can be precomputed, so it must run once per candidate for every question. The usual pattern is to retrieve 30 to 50 candidates cheaply and rerank only those.
 
-**Here.** R5 tests whether re-ordering the top 30 puts the right provision into the top five often enough to justify the extra time. Not yet run.
+**Here.** R5 tested whether re-ordering BGE-M3's top 30 (or top 50) with `bge-reranker-v2-m3` puts the right provision into the top five. It did not: recall@5 was 0.52 and 0.53 against 0.53 without it, with intervals of about plus or minus 0.14 around no change, and it was 32 to 49 times slower. We checked one likely reason, that the model's 512-token limit cuts long chunks, and it was not the cause. Why it did not help is still unexplained, and the result is for these 31 questions and this model.
+
+**In plain words.** Imagine a librarian who finds ten books by glancing at titles (the first search), then a second, slower librarian who reads each of the ten properly against your question (the reranker). That second reading only pays if the first librarian's order is often wrong in a way a careful read would fix. Here the first order was already about as good as the careful read.
 
 ## 5. Latency
 
 **Generic.** Latency is the time from a question to its answer, measured in percentiles because the average hides slow cases: p50 is the typical request and p95 the slow tail. It is a sum of stages: embedding the question, searching, reranking, and (usually the largest) the language model generating the answer. Each stage added for accuracy must pay for its delay.
 
-**Here.** BM25 is already in the milliseconds. Query embedding is one call (a network round trip if hosted, a short computation if local); reranking is the stage most likely to cost real time, because it runs 30 passes per question. We have not measured any of these yet; R5 will report latency next to accuracy, and Phase 5 logs it for every real query.
+**Here.** BM25 is already in the milliseconds. Query embedding is one call (a network round trip if hosted, a short computation if local); reranking is the stage most likely to cost real time, because it runs 30 passes per question. Measured on the project owner's GTX 1060 (half precision): the first search takes 0.12 s per question, and adding the reranker over the top 30 makes it 3.83 s (5.91 s over the top 50). The rewrite step will add one language-model call whose time is not yet measured, and Phase 5 logs latency for every real query.
 
 ## 6. What this means for the design
 
@@ -150,7 +152,7 @@ Fused order: B, A, D, C. B wins although it was first in only one list, because 
 **k is how many of the top results we look at.** The search returns a ranked list; "@5" means: score only the first five results and ignore the rest. We report several because each answers a practical question: **@1** (is the very first result right? what a user sees first), **@3 and @5** (what the answer-writing model will read; @5 is our headline), **@10** (how deep a safety net goes, and how many candidates a reranker could reorder). A larger k can only find more, so recall@10 is never below recall@5. Do not confuse it with other letters named k: BM25's **k1 = 1.2** is a setting that makes repeated words count less and less, and the **60** in reciprocal rank fusion is sometimes called k too. They are unrelated. The setting "how many chunks go to the answer model" is also called top-k (experiment R9).
 
 ### Three different kinds of model (the plan mentions all three)
-1. **Embedding models** turn text into vectors for search. Candidates for R4 (specifications read from the official pages on 15 October 2026; none has been run yet):
+1. **Embedding models** turn text into vectors for search. Candidates for R4 (specifications read from the official pages on 15 October 2026; BGE-M3 has been run, the others have not):
 
 | | gemini-embedding-2 (Google, hosted) | BGE-M3 (BAAI, open) | multilingual-e5-large (Microsoft researchers, open) |
 |---|---|---|---|
@@ -163,7 +165,15 @@ Fused order: B, A, D, C. B wins although it was first in only one list, because 
 
    Also noted on Google's page: gemini-embedding-001 is the older text-only model (2,048-token limit), and the two models' vectors are incompatible, so switching means re-embedding everything.
    **A consequence for us:** our chunks of up to 400 words are probably around 550 to 600 English tokens (my estimate, not measured, and Spanish needs more), which is over the 512-token limit of multilingual-e5, so it would silently cut the end of long chunks. This links R4 to R3 (chunk size).
-2. **A reranker** (a cross-encoder) re-scores the top candidates. No candidate has been chosen or researched yet; that happens before R5.
+2. **A reranker** (a cross-encoder) re-scores the top candidates. The one tried was BAAI's `bge-reranker-v2-m3` (Apache-2.0, 2.27 GB, 512-token limit in the example we followed); it did not help (section 4).
 3. **The answer model** (a large language model) writes the final answer from the retrieved chunks. The plan's default is Gemini 3.1 Flash-Lite, to be compared in roadmap item 4.6 with a larger Gemini Flash and with an open model (gpt-oss-120b). This is Phase 4, not retrieval.
 
 BM25 is not a model in this sense: nothing is trained, it is a counting formula.
+
+## 9. Rewriting the question before searching
+
+**Generic.** People write in everyday words and laws are written in legal terms ("a person responsible for data protection" against "data protection officer"). Embedding models bridge much of that gap, not all of it. **Query rewriting** adds a step before the search: a language model restates the question in the vocabulary the documents use, and the search runs on the rewrite (or on the question plus the rewrite). It adds one language-model call per question, so it costs time and money, and the result depends on how much law the model knows. The classic risks are a rewrite that drifts from what was asked (so the original is often kept next to it), and testing it fairly: if the person or model writing the rewrites has seen the right answers, the test is flattered.
+
+**Here.** R6 tested it on the 31 development questions. A separate agent, shown only the question texts, wrote one rewrite for each (same language, legal terms, no article numbers, at most 40 words); the rewrites are stored in `eval/rewrites/`. Searching with the rewrite alone raised recall@5 from 0.53 to 0.68; searching with the question followed by the rewrite raised it to 0.70, and both improvements are detectable (paired intervals +0.030 to +0.282 and +0.040 to +0.315). The gain was bigger for English questions than for Spanish ones. Still to do: confirm on the test half with rewrites from the same prompt, and measure what the extra call costs.
+
+**In plain words.** It is like asking a lawyer friend, "how would the law phrase this?" before you go to the library. The librarian finds books much more often when you hand over the legal phrasing, but your friend's time is not free, and your friend can only help as far as their own knowledge of the law goes.
