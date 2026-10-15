@@ -35,7 +35,15 @@ Stated expectations (can be wrong): R8.2 raises recall@5 on undated questions an
 about the original text; R8.3 keeps both; R10.1 helps a little (copies freed from the top five); R10.2
 hurts or does not help.
 
-Run: python experiments/r8_r10_bm25.py [--log]
+REPEAT WITH EMBEDDINGS (addendum written 15 October 2026, before the run): `--model bge` repeats the same
+variants, metrics, comparisons and decision rules with BGE-M3 as the retriever (the dense index over each
+policy's chunks reads the already saved vectors). Baseline: BGE-M3 over all chunks (R4.1, recall@5 0.53).
+Stated expectations (can be wrong): with embeddings an article's other-language copy is also returned, so
+R10.1 frees slots and gains a little (point estimate above 0), and R8.2 gains on undated questions while
+still losing the two questions about the original text; neither interval is expected to exclude 0 on 31
+questions.
+
+Run: python experiments/r8_r10_bm25.py [--model bm25|bge] [--log]
 """
 
 from __future__ import annotations
@@ -60,6 +68,7 @@ from law_assistant.retrieval.report import format_table, summarise_with_ci
 from law_assistant.retrieval.runner import evaluate, run_retriever, select
 
 K = 10
+MODEL = sys.argv[sys.argv.index("--model") + 1] if "--model" in sys.argv else "bm25"
 CUTOFF = "2026-07-27"  # the date of the consolidated AI Act
 RUNS = settings.PROJECT_ROOT / "data" / "runs"
 LOG = settings.PROJECT_ROOT / "docs" / "EXPERIMENTS.md"
@@ -71,16 +80,34 @@ def main() -> int:
     questions = select(read_gold(settings.GOLD_DIR / "questions.jsonl"), "dev")
     manifest = read_manifest(settings.GOLD_DIR / "MANIFEST.json")
 
-    base = BM25Index(chunks, name="bm25-plain")
+    if MODEL == "bge":
+        from law_assistant.retrieval.bge import BGEEmbedder, document_prompt, query_prompt
+        from law_assistant.retrieval.dense import DenseIndex
+
+        embedder = BGEEmbedder.load(settings.PROJECT_ROOT / "data" / "models" / "bge-m3", device="cuda")
+        store = settings.PROJECT_ROOT / "data" / "indexes" / "bge-m3"
+
+        def make(subset, name):
+            return DenseIndex(
+                subset, embedder, store, name=name,
+                document_prompt_fn=document_prompt, query_prompt_fn=query_prompt,
+            )  # fmt: skip
+
+    else:
+
+        def make(subset, name):
+            return BM25Index(subset, name=name)
+
+    base = make(chunks, f"{MODEL}-plain")
     current = current_text_only(chunks)
     original = original_text_only(chunks)
     retrievers = {
         "R8.1 everything (baseline R1.1)": base,
-        "R8.2 current text only": BM25Index(current, name="bm25-current"),
+        "R8.2 current text only": make(current, f"{MODEL}-current"),
         "R8.3 original for past dates, current otherwise": AsOfRetriever(
             questions,
-            early=BM25Index(original, name="bm25-original"),
-            late=BM25Index(current, name="bm25-current"),
+            early=make(original, f"{MODEL}-original"),
+            late=make(current, f"{MODEL}-current"),
             cutoff=CUTOFF,
         ),
         "R10.1 collapse copies of a piece": CollapsedRetriever(base, by_id, by="copies"),
@@ -89,7 +116,7 @@ def main() -> int:
     scores, results = {}, {}
     for label, retriever in retrievers.items():
         run = run_retriever(retriever, questions, k=K)
-        write_run(RUNS / f"r8_r10_{retriever.name.replace('|', '_')}.jsonl", run)
+        write_run(RUNS / f"r8_r10_{MODEL}_{retriever.name.replace('|', '_')}.jsonl", run)
         scores[label] = evaluate(questions, run, chunks)
         results[label] = summarise_with_ci(scores[label])
 
@@ -98,7 +125,7 @@ def main() -> int:
         i for i, q in enumerate(questions) if q.type == "as_of" or any(g.version is not None for g in q.gold)
     ]
     out = [
-        f"### R8 and R10 with BM25 on the development questions ({len(questions)} retrieval questions)",
+        f"### R8 and R10 with {MODEL} on the development questions ({len(questions)} retrieval questions)",
         "",
         format_table(results),
         "",
@@ -128,7 +155,7 @@ def main() -> int:
         git = ["git", "rev-parse", "--short", "HEAD"]
         commit = subprocess.run(git, capture_output=True, text=True).stdout.strip()
         header = (
-            f"\n\n## R8 and R10 with BM25, run {date.today().isoformat()} "
+            f"\n\n## R8 and R10 with {MODEL}, run {date.today().isoformat()} "
             f"(commit {commit}; gold fingerprint {manifest['sha256'][:8]})\n\n"
         )
         LOG.write_text(LOG.read_text(encoding="utf-8") + header + report + "\n", encoding="utf-8")

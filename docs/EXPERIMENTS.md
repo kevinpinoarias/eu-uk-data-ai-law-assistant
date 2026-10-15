@@ -167,3 +167,92 @@ Recall@5 by question language (B1 BM25 plain, B2 embedding alone, R2.1 RRF equal
 **R4.1, BGE-M3 against BM25.** Against the pre-registered rule: BGE-M3 improves recall@5 from 0.24 to 0.53 and the lower end of the paired interval (+0.086) is above 0, so it is better than BM25 and becomes the retriever the later experiments are measured against. Against the stated expectations: "beats BM25 with the lower bound above 0" held; "most on lay-worded questions" held (questions that share few words with their gold text go from 0.22 to 0.59, lookups from 0.12 to 0.75); "below 0.9" held. Cross-language questions (a question in one language whose gold text is in the other) have not been separated yet. Zero chunks were cut at 1,024 tokens. It is still only one model: R4 adopts a model after every candidate has run, and about half of the required provisions are still missing from the top five (recall@10 is 0.63).
 
 **R2, fusion with BM25.** Not adopted, and the stated expectation was wrong: merging BM25 into BGE-M3 lowers recall@5 from 0.53 to 0.43 (paired interval -0.242 to +0.024, so not detectably worse, but in no resample clearly better). The reason is the arithmetic of the method: reciprocal rank fusion gives both lists equal weight, and BM25's top results are mostly wrong (recall@5 0.24), so they push right answers down. By the pre-registered rule R2.2 (weighting the embedding list 2 to 1) is not run, because R2.1 does not improve on the better single retriever in point estimate. Fusion may pay off if the keyword side improves (for example after the query is rewritten, R6) or with a weaker embedding model; that is a hypothesis, not a result.
+
+
+## Cross-language breakdown, run 2026-10-15 (commit 7fbd515; gold fingerprint 7d9a62f5)
+
+### Cross-language breakdown of R1.1 and R4.1 (31 development questions)
+
+recall@5 by group (R1.1 BM25, R4.1 BGE-M3; number of questions):
+
+- cross-language (no text in the question's language): 0.00, 0.67 (n = 3)
+- same-language text available: 0.27, 0.52 (n = 28)
+
+hit@5 by group (R1.1 BM25, R4.1 BGE-M3; number of questions):
+
+- cross-language (no text in the question's language): 0.00, 0.67 (n = 3)
+- same-language text available: 0.39, 0.61 (n = 28)
+
+Cross-language development questions: q042, q049, q074.
+- R1.1 BM25 recall@5 on them: q042 0.00, q049 0.00, q074 0.00
+- R4.1 BGE-M3 recall@5 on them: q042 1.00, q049 0.00, q074 1.00
+
+
+## R8 and R10 with bge, run 2026-10-15 (commit 7fbd515; gold fingerprint 7d9a62f5)
+
+### R8 and R10 with bge on the development questions (31 retrieval questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R8.1 everything (baseline R1.1) | 0.53 (0.37 to 0.69) | 0.46 (0.31 to 0.62) | 0.48 (0.34 to 0.62) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.78) |
+| R8.2 current text only | 0.52 (0.37 to 0.69) | 0.48 (0.33 to 0.64) | 0.49 (0.36 to 0.63) | 0.61 (0.45 to 0.77) | 0.63 (0.48 to 0.78) |
+| R8.3 original for past dates, current otherwise | 0.52 (0.37 to 0.69) | 0.48 (0.33 to 0.64) | 0.49 (0.35 to 0.63) | 0.61 (0.45 to 0.77) | 0.63 (0.48 to 0.78) |
+| R10.1 collapse copies of a piece | 0.52 (0.37 to 0.69) | 0.47 (0.32 to 0.62) | 0.49 (0.35 to 0.64) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.79) |
+| R10.2 collapse to one chunk per unit | 0.51 (0.35 to 0.67) | 0.46 (0.31 to 0.61) | 0.48 (0.34 to 0.63) | 0.58 (0.42 to 0.74) | 0.61 (0.45 to 0.77) |
+
+Each variant against R1.1 on recall@5 (paired bootstrap), and recall@5 on the 12 version-sensitive questions:
+
+- R8.1 everything (baseline R1.1): difference +0.000 (95 % interval +0.000 to +0.000); version-sensitive recall@5 0.38 (baseline 0.38)
+- R8.2 current text only: difference -0.008 (95 % interval -0.048 to +0.024); version-sensitive recall@5 0.33 (baseline 0.38)
+- R8.3 original for past dates, current otherwise: difference -0.008 (95 % interval -0.048 to +0.024); version-sensitive recall@5 0.33 (baseline 0.38)
+- R10.1 collapse copies of a piece: difference -0.008 (95 % interval -0.048 to +0.024); version-sensitive recall@5 0.33 (baseline 0.38)
+- R10.2 collapse to one chunk per unit: difference -0.024 (95 % interval -0.081 to +0.016); version-sensitive recall@5 0.29 (baseline 0.38)
+
+Gold provisions no chunk of the index can satisfy (of the development questions):
+
+- all texts: 0 (none)
+- current text only: 2 (q044, q048)
+- original text only: 14 (q004, q009, q013, q020, q025, q026, q044, q047, q048, q072)
+
+
+## Diagnostic: depth of the required provisions in BGE-M3's ranking, run 2026-10-15 (commit 7fbd515; gold fingerprint 7d9a62f5)
+
+### How deep BGE-M3 ranks the required provisions (31 development questions, 54 primary provisions)
+
+- within the top 5: 44% of provisions; all provisions of 45% of the questions
+- within the top 10: 54% of provisions; all provisions of 55% of the questions
+- within the top 20: 65% of provisions; all provisions of 65% of the questions
+- within the top 30: 65% of provisions; all provisions of 65% of the questions
+- within the top 50: 76% of provisions; all provisions of 74% of the questions
+- within the top 100: 89% of provisions; all provisions of 87% of the questions
+- median best rank 8, worst 813 of 3831 chunks
+
+**Reading the diagnostic (exploration).** BGE-M3 has the required provision within its top 10 for 54 % of the 54 primary provisions, within the top 30 for 65 % and within the top 100 for 89 %; the median best rank is 8 and the worst is 813 of 3,831. A reranker that re-scores the top 30 can therefore lift at most 65 % of provisions into view, against 44 % in the top 5 today (about +21 points at best), and the 35 % that sit beyond rank 30 are out of its reach: they need a better first-stage search (a better model or a rewritten question). This is the ceiling for R5, not a prediction of what it will deliver.
+
+**Reading R8 and R10 repeated with BGE-M3.** Nothing is adopted. Version policy and duplicate collapsing change recall@5 by -0.008 to -0.024 (every interval includes 0): the stated expectation that collapsing copies would gain a little was wrong, and the expectation that current-text-only would gain on undated questions was wrong in direction. With a better retriever the two questions are still not where the losses are: the answer is not found because the right article is not ranked high, not because copies crowd it out.
+
+**Reading the cross-language breakdown.** Only three development questions are cross-language (q042, q049, q074). BM25 scores 0 on all three as expected, and BGE-M3 finds two of them (recall@5 1.00 on q042 and q074, 0.00 on q049). Too few for any claim beyond "keyword search cannot, and the embedding model can".
+
+
+
+## R3 chunk size and context line with BGE-M3, run 2026-10-15 (commit 7fbd515; gold fingerprint 7d9a62f5)
+
+### R3 (chunk size, context line) with BGE-M3 on the development questions (31 questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R3.1 cap 400 (baseline R4.1) | 0.53 (0.37 to 0.69) | 0.46 (0.31 to 0.62) | 0.48 (0.34 to 0.62) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.78) |
+| R3.2 cap 200 | 0.57 (0.41 to 0.73) | 0.49 (0.34 to 0.64) | 0.50 (0.36 to 0.63) | 0.65 (0.48 to 0.81) | 0.67 (0.52 to 0.81) |
+| R3.3 cap 300 | 0.54 (0.38 to 0.70) | 0.46 (0.32 to 0.62) | 0.47 (0.34 to 0.61) | 0.61 (0.45 to 0.77) | 0.64 (0.48 to 0.79) |
+| R3.4 cap 600 | 0.48 (0.31 to 0.64) | 0.43 (0.29 to 0.58) | 0.46 (0.33 to 0.59) | 0.55 (0.39 to 0.71) | 0.63 (0.48 to 0.78) |
+| R3.5 cap 400, no context line | 0.37 (0.23 to 0.53) | 0.33 (0.19 to 0.48) | 0.32 (0.20 to 0.46) | 0.45 (0.29 to 0.65) | 0.44 (0.28 to 0.60) |
+
+Each variant against R3.1 on recall@5 (paired bootstrap), with the size of its index:
+
+- R3.1 cap 400 (baseline R4.1): difference +0.000 (95 % interval +0.000 to +0.000); 3,831 chunks, mean 218 words
+- R3.2 cap 200: difference +0.040 (95 % interval -0.089 to +0.177); 6,278 chunks, mean 133 words
+- R3.3 cap 300: difference +0.008 (95 % interval -0.065 to +0.097); 4,574 chunks, mean 182 words
+- R3.4 cap 600: difference -0.056 (95 % interval -0.137 to +0.008); 3,195 chunks, mean 261 words
+- R3.5 cap 400, no context line: difference -0.161 (95 % interval -0.315 to -0.016); 3,831 chunks, mean 218 words
+
+**Reading R3 with BGE-M3.** Nothing is adopted for chunk size: no cap beats 400 detectably (cap 200 +0.040 with an interval of -0.089 to +0.177; cap 300 +0.008; cap 600 -0.056 with an interval of -0.137 to +0.008). Against the stated expectations: "recall@5 does not improve detectably with smaller chunks" held; "cap 600 is not better" held; "leaving the context line out lowers recall@5" held, and it is the first detectable effect in Phase 3: recall@5 falls from 0.53 to 0.37, a paired difference of -0.161 with an interval of -0.315 to -0.016 that excludes 0. The context line ("GDPR | Chapter II | Article 6: Lawfulness of processing") is the part of a chunk that tells the embedding model which law and which article it is reading, and a lay question matches that heading. With BM25 the same removal moved recall@5 by only -0.027 (not detectable), so the line matters much more to an embedding model. Cap 200 is the only size that looks slightly better and costs 64 % more chunks, so it is left as a candidate for the final configuration and is not adopted.

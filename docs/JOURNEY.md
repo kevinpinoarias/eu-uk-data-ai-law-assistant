@@ -74,6 +74,18 @@ The rule behind everything: **never trust a stage because it looks right; test i
 
 **R2: hybrid search.** The code for merging two ranked lists by place (reciprocal rank fusion) is written and tested; the experiment runs when vectors exist.
 
+## Phase 3, continued: a real embedding model
+
+**The idea.** An embedding model turns text into a list of numbers so that similar meanings sit close together. A question like "name a person responsible for data protection" and an article that says "designate a data protection officer" then land near each other even though they share few words.
+**Why a local model.** Google's hosted model has a free tier that slowed to a halt after a few hundred requests (its last save was 30 minutes old when we noticed), so we switched to an open model, BGE-M3, that runs on the project owner's own graphics card. It needs no key and no network once downloaded. It is optional: the tests, CI and keyword search do not need it.
+**What it took.** Check the computer (a GTX 1060 card), choose a PyTorch version that still supports that older card and verify it works after installing, download only the needed files (2.27 GB), read the model's own pooling configuration instead of assuming it, and test the real model (right size, unit length, a sentence closer to its translation than to an unrelated one).
+**What we found.**
+- Embeddings find far more: recall@5 rose from 0.24 (keyword) to 0.53, a clear improvement even allowing for only 31 questions.
+- They work across languages where keyword search scores zero (3 test cases: keyword 0 of 3, embeddings 2 of 3).
+- **Mixing the two searches made things worse** (0.43), because the equal-weight merge lets the weak keyword list drag down the strong one. The plan's rule forbade tuning until it looked better, so the variant was recorded as a miss.
+- Tidying the index (which version of a text to keep, merging duplicate copies, chunk sizes) still changes nothing detectable. The real remaining problem is ranking: a diagnostic shows only 44 % of required provisions sit in the top 5, 65 % in the top 30 and 89 % in the top 100.
+**What that implies.** A reranker (a slower second-pass scorer) could at best lift provisions that are already in the top 30, so its gain is capped at about 21 points, and the provisions beyond rank 30 need a better first search (another model, or a rewritten question).
+
 ## What the process has taught us so far
 
 1. **Checks that can fail beat checks that cannot.** Every serious bug (a dropped annex, dotted "law", a wrong article in a gold answer) was found by a check or a review, not by looking.
@@ -81,6 +93,8 @@ The rule behind everything: **never trust a stage because it looks right; test i
 3. **A weak stage hides the effect of the stages after it.** BM25's 0.24 made three experiments uninformative; fixing retrieval first makes the rest measurable.
 4. **Say what was and was not verified.** Model specifications were read from the official pages; sizes that the pages did not state are marked as unknown until checked.
 5. **Keep the labels honest.** The gold set is not lawyer-reviewed, and every provisional result says so.
+6. **Look where the failures are before choosing a fix.** The rank-depth diagnostic showed what a reranker can and cannot do before any reranker was downloaded.
+7. **A rule that forbids tuning is worth having.** Fusion lost, and the plan did not let us hunt for weights until it won.
 
 ## Where we are now
 
