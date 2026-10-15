@@ -4,6 +4,8 @@ A bilingual (English and Spanish) retrieval-augmented assistant for EU, Spanish 
 
 > **Status: building (October 2026).** Fetching, parsing, chunking, the frozen 80-question gold set, the facts table, the metrics, the retrieval experiments and a first answer layer are built and measured on the development half. The 40 test questions have not been read yet; that confirmation is the next milestone. For a plain-words walk through every step and why it was taken, see [docs/JOURNEY.md](docs/JOURNEY.md); for the answer layer, [docs/HOW_THE_ANSWER_LAYER_WORKS.md](docs/HOW_THE_ANSWER_LAYER_WORKS.md). It is not legal advice.
 
+> **Where to start:** [docs/INDEX.md](docs/INDEX.md) is the map of every document and how to track the project; [docs/RAG_PLAYBOOK.md](docs/RAG_PLAYBOOK.md) is a step-by-step guide to building a RAG tool using this project as the worked example; [docs/EXPERIMENT_INDEX.md](docs/EXPERIMENT_INDEX.md) lists every experiment with its result and decision; [docs/GLOSSARY.md](docs/GLOSSARY.md) explains every term.
+
 ## Why this project
 
 An earlier project of mine, a hospitality demand-forecasting system with a live chat assistant, answers numeric questions by tool-calling against structured data, because a model that retrieves a passage and paraphrases it can get a number wrong. The opposite case is unstructured prose with no schema, such as legislation, where semantic retrieval is the right fit. This project tests that reasoning on a corpus large enough to matter, and measures it.
