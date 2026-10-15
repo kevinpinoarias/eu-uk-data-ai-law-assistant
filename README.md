@@ -2,7 +2,7 @@
 
 A bilingual (English and Spanish) retrieval-augmented assistant for EU, Spanish and UK data-protection and AI law. It aims to answer questions with verified citations, say when it does not know, and measure every design choice instead of assuming it.
 
-> **Status: planning. Nothing is built yet.** This repository currently holds the project scaffolding and the source and licence research. It is not legal advice.
+> **Status: building (October 2026).** Fetching, parsing, chunking, the frozen 80-question test set, the facts table, the evaluation metrics and the first retrieval experiments are done; embedding-based retrieval is in progress and the answer layer is planned. For a plain-words walk through every step and why it was taken, see [docs/JOURNEY.md](docs/JOURNEY.md). It is not legal advice.
 
 ## Why this project
 
@@ -29,11 +29,11 @@ Regulator guidance, case law and adjacent laws come in later tiers. See [SOURCES
 
 | Phase | What |
 |---|---|
-| 0. Sources and licences | Confirm what may be reused and how, and which versions exist. Licences, document manifest and fetch rules are done; technology decisions (models, cloud) are pending |
-| 1. Ingestion and chunking | Polite fetchers; chunks by legal structure with citation and as-of-date metadata |
-| 2. Gold question set | 60 to 100 bilingual questions with the correct articles, frozen before any experiment |
-| 3. Retrieval experiments | Keyword, embeddings and hybrid; chunking; embedding models; reranking; filters; vector store comparison. Pre-registered, judged by hit@k, recall@k, MRR and nDCG with bootstrap intervals |
-| 4. Answer layer | A LangGraph workflow: route, retrieve, grade, answer with citations, verify, or abstain; compared with no retrieval and with the whole corpus in the prompt |
+| 0. Sources and licences | Confirm what may be reused and how, and which versions exist. Done |
+| 1. Ingestion and chunking | Polite fetchers; chunks by legal structure with citation and as-of-date metadata. Done |
+| 2. Gold question set | 80 bilingual questions with the correct articles, a table of exact facts and the metrics, frozen before any experiment. Done (not lawyer-reviewed) |
+| 3. Retrieval experiments (in progress) | Keyword, embeddings and hybrid; chunking; embedding models; reranking; filters; vector store comparison. Pre-registered, judged by hit@k, recall@k, MRR and nDCG with bootstrap intervals |
+| 4. Answer layer (planned: [docs/PHASE4_PLAN.md](docs/PHASE4_PLAN.md)) | A LangGraph workflow: route, retrieve, grade, answer with citations, verify, or abstain; compared with no retrieval and with the whole corpus in the prompt |
 | 5. Ship | API, interface, Docker, CI, deployment and retrieval traces |
 
 ## Development

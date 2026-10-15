@@ -75,3 +75,27 @@ Gold provisions no chunk of the index can satisfy (of the development questions)
 
 **Why so little moved, and what this does not show.** BM25 finds the right unit in its top 10 for only about 30 % of the required provisions, so freeing slots (R10) or removing superseded copies (R8) has little to act on: the bottleneck is the vocabulary gap, not the slots. These questions are therefore not answered yet; they are repeated with embeddings once R1.3 exists, where the other language's copy of each article is also returned and the picture may differ. Conclusions here are provisional by design.
 
+
+
+## R3 chunk size and context line with BM25, run 2026-10-15 (commit 6986e7f; gold fingerprint 7d9a62f5)
+
+### R3 (chunk size, context line) with BM25 on the development questions (31 questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R3.1 cap 400 (baseline R1.1) | 0.24 (0.12 to 0.39) | 0.25 (0.13 to 0.40) | 0.22 (0.11 to 0.35) | 0.35 (0.19 to 0.52) | 0.30 (0.17 to 0.45) |
+| R3.2 cap 200 | 0.22 (0.10 to 0.35) | 0.25 (0.12 to 0.40) | 0.23 (0.12 to 0.35) | 0.35 (0.19 to 0.52) | 0.29 (0.16 to 0.44) |
+| R3.3 cap 300 | 0.21 (0.10 to 0.35) | 0.23 (0.11 to 0.36) | 0.21 (0.10 to 0.33) | 0.32 (0.16 to 0.48) | 0.30 (0.17 to 0.45) |
+| R3.4 cap 600 | 0.24 (0.12 to 0.39) | 0.22 (0.11 to 0.34) | 0.20 (0.11 to 0.31) | 0.35 (0.19 to 0.52) | 0.31 (0.18 to 0.46) |
+| R3.5 cap 400, no context line | 0.22 (0.10 to 0.36) | 0.23 (0.10 to 0.38) | 0.20 (0.09 to 0.32) | 0.29 (0.13 to 0.45) | 0.27 (0.13 to 0.42) |
+
+Each variant against R3.1 on recall@5 (paired bootstrap), with the size of its index:
+
+- R3.1 cap 400 (baseline R1.1): difference +0.000 (95 % interval +0.000 to +0.000); 3,831 chunks, mean 218 words
+- R3.2 cap 200: difference -0.024 (95 % interval -0.065 to +0.000); 6,278 chunks, mean 133 words
+- R3.3 cap 300: difference -0.032 (95 % interval -0.097 to +0.000); 4,574 chunks, mean 182 words
+- R3.4 cap 600: difference +0.000 (95 % interval +0.000 to +0.000); 3,195 chunks, mean 261 words
+- R3.5 cap 400, no context line: difference -0.027 (95 % interval -0.059 to +0.000); 3,831 chunks, mean 218 words
+
+**Reading this result.** Nothing is adopted: no variant's paired interval has its lower end above 0 (the upper end of every interval is exactly 0.000, because no variant improves a single question's recall@5 on net). Against the stated expectations: "recall@5 changes little with chunk size" holds (cap 200 and 300 are 0.02 to 0.03 lower, cap 600 equal); "smaller chunks raise hit@5 on lookups" was wrong (hit@5 is 0.35 at caps 200 and 400 and 0.32 at 300); "leaving the context line out lowers recall@5 slightly" is the point estimate (0.22 against 0.24; hit@5 falls from 0.35 to 0.29) but is not detectable at this sample size. Cap 600 does not lose anything with BM25, but it would exceed the 512-token limit of multilingual-e5 and is not a free choice for R4. Provisional, to be repeated with embeddings: BM25's weak baseline (0.24) limits how much any chunking choice can show.
+
