@@ -27,6 +27,7 @@ from law_assistant.answer.understand import understand
 from law_assistant.answer.verify import verify_citations
 from law_assistant.chunk.chunker import Chunk
 from law_assistant.facts.table import Fact
+from law_assistant.llm.gemini import LLMError
 
 AS_OF_CUTOFF = (
     "2026-07-27"  # the date of the consolidated AI Act; earlier dates need the first-published text
@@ -59,6 +60,11 @@ MESSAGES = {
             "I couldn't find enough in the texts I hold to answer that reliably. Try rephrasing the "
             "question or naming the law you mean."
         ),
+        "model_down": (
+            "The answer-writing service is unavailable right now, so I can't write an answer. These are "
+            "the passages of the law most relevant to your question; please read them yourself or "
+            "try again later."
+        ),
         "sources": "Sources:",
         "disclaimer": "This explains what the text says; it is not legal advice.",
         "caveat": "Note:",
@@ -78,6 +84,11 @@ MESSAGES = {
         "abstained": (
             "No he encontrado en los textos que tengo lo suficiente para responder con fiabilidad. Prueba a "
             "reformular la pregunta o a indicar de qué ley hablas."
+        ),
+        "model_down": (
+            "El servicio que redacta las respuestas no está disponible ahora, así que no puedo redactar una "
+            "respuesta. Estos son los pasajes de la ley más relevantes para tu pregunta; léelos tú o "
+            "vuelve a intentarlo más tarde."
         ),
         "sources": "Fuentes:",
         "disclaimer": "Esto explica lo que dice el texto; no es asesoramiento jurídico.",
@@ -135,12 +146,18 @@ class AnswerPipeline:
         k: int = 5,
         rewriter: Callable[[str], str] | None = None,
         version_aware: bool = True,
+        fallback_router=None,
+        fallback_matcher=None,
     ) -> None:
         self._router, self._picker, self._writer = router, picker, writer
         self._current, self._full, self._k, self._rewriter = current, full, k, rewriter
         self._original = original or full  # text before the 2026 amendment, for questions dated earlier
         self._version_aware = version_aware  # False reproduces the first design: early date -> `full`
         self._by_id = {c.id: c for c in chunks}
+        # Degraded mode: when the language model cannot be reached, plain rules route the question and the
+        # nearest table row is found by similarity; without a text answer the passages are shown as they are.
+        self._fallback_router, self._fallback_matcher = fallback_router, fallback_matcher
+        self._degrade = fallback_router is not None or fallback_matcher is not None
 
     # ----------------------------------------------------------------- steps (state in, new keys out)
     def understand(self, state: dict) -> dict:
@@ -153,20 +170,34 @@ class AnswerPipeline:
         }
 
     def route(self, state: dict) -> dict:
-        r: Route = self._router.route(state["question"])
-        return {"route": r.route, "reason": r.reason}
+        try:
+            r: Route = self._router.route(state["question"])
+            return {"route": r.route, "reason": r.reason}
+        except LLMError:
+            if self._fallback_router is None:
+                raise
+        r = self._fallback_router.route(state["question"])
+        return {"route": r.route, "reason": r.reason, "degraded": True}
 
     def lookup(self, state: dict) -> dict:
-        fact = self._picker.pick(state["question"], state["jurisdictions"])
+        degraded = state.get("degraded", False)
+        try:
+            fact = self._picker.pick(state["question"], state["jurisdictions"])
+        except LLMError:
+            if self._fallback_matcher is None:
+                raise
+            degraded = True
+            match = self._fallback_matcher.match(state["question"], state["language"], state["jurisdictions"])
+            fact = match.fact
         if fact is None:
-            return {"fact": None, "route": "retrieve", "fell_back": True}
+            return {"fact": None, "route": "retrieve", "fell_back": True, "degraded": degraded}
         lang = state["language"]
         text = fact.summary(lang)
         caveat = fact.caveat_en if lang == "en" else fact.caveat_es
         if caveat:
             text += f"\n\n{MESSAGES[lang]['caveat']} {caveat}"
         sources = _fact_source_label(fact)
-        return {"fact": fact, "result": self._render("table", text, state, sources)}
+        return {"fact": fact, "result": self._render("table", text, state, sources), "degraded": degraded}
 
     def refuse(self, state: dict) -> dict:
         reason = state["reason"] or "legal_advice"
@@ -190,9 +221,14 @@ class AnswerPipeline:
     def generate(self, state: dict) -> dict:
         if not state["passages"]:
             return {"draft": None}
-        draft = self._writer.write(
-            state["question"], state["language"], state["passages"], as_of=state["as_of"]
-        )
+        try:
+            draft = self._writer.write(
+                state["question"], state["language"], state["passages"], as_of=state["as_of"]
+            )
+        except LLMError:
+            if not self._degrade:
+                raise
+            return {"draft": None, "model_down": True, "degraded": True}
         return {"draft": draft}
 
     def verify(self, state: dict) -> dict:
@@ -203,6 +239,8 @@ class AnswerPipeline:
 
     def finish(self, state: dict) -> dict:
         lang = state["language"]
+        if state.get("model_down"):
+            return {"result": self._passages_only(state)}
         verification = state.get("verification")
         if verification is None or not verification.valid:
             return {"result": Result("abstained", MESSAGES[lang]["abstained"], lang, "retrieve")}
@@ -211,6 +249,20 @@ class AnswerPipeline:
             for v in verification.valid
         ]
         return {"result": self._render("answer", state["draft"].text, state, sources)}
+
+    def _passages_only(self, state: dict) -> Result:
+        """No answer, no invention: the most relevant passages as they are, with their labels."""
+        lang = state["language"]
+        shown = state["passages"][:3]
+        lines = [MESSAGES[lang]["model_down"], ""]
+        sources = []
+        for c in shown:
+            snippet = " ".join(c.text.split())
+            snippet = snippet[:280] + ("…" if len(snippet) > 280 else "")
+            lines.append(f"- {source_label(c)}: {snippet}")
+            sources.append(Source(source_label(c), c.id, None, c.provision_ids))
+        lines += ["", MESSAGES[lang]["disclaimer"]]
+        return Result("sources", "\n".join(lines), lang, "retrieve", None, sources)
 
     # ----------------------------------------------------------------- wiring
     def _render(self, kind: str, body: str, state: dict, sources: list[Source]) -> Result:
@@ -267,6 +319,7 @@ class AnswerPipeline:
             "as_of": state["as_of"],
             "fact_key": state["fact"].key if state.get("fact") else None,
             "fell_back_from_table": state.get("fell_back", False),
+            "degraded": state.get("degraded", False),
             "passages": [c.id for c in state.get("passages", [])],
             "enough_evidence": state["draft"].enough_evidence if state.get("draft") else None,
             "invalid_citations": verification.invalid if verification else [],

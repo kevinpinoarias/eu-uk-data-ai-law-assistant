@@ -201,3 +201,101 @@ def test_without_version_awareness_an_early_date_uses_the_full_index_and_origina
     p.ask("How was it worded as first published in the Official Journal?")
     assert parts["full"].asked and not parts["original"].asked
     assert len(parts["current"].asked) == 1
+
+
+# --- degraded mode: the language model is unavailable ---------------------------------------------------------
+from law_assistant.answer.facts_lookup import FactMatch  # noqa: E402
+from law_assistant.llm.gemini import LLMError  # noqa: E402
+
+
+class DownRouter:
+    def route(self, text):
+        raise LLMError("HTTP 429: the quota is used up")
+
+
+class DownPicker:
+    def pick(self, question, jurisdictions=()):
+        raise LLMError("down")
+
+
+class DownWriter:
+    def write(self, *args, **kwargs):
+        raise LLMError("down")
+
+
+class FakeMatcher:
+    def __init__(self, fact):
+        self.fact, self.asked = fact, []
+
+    def match(self, question, language, jurisdictions=()):
+        self.asked.append((question, language, tuple(jurisdictions)))
+        return FactMatch(self.fact, 0.7 if self.fact else 0.2)
+
+
+class RulesFake:
+    name = "rules"
+
+    def __init__(self, route):
+        self._route = route
+
+    def route(self, text):
+        return self._route
+
+
+def degraded(router=None, picker=None, writer=None, matcher=None, fallback=None):
+    return AnswerPipeline(
+        router=router or DownRouter(), picker=picker or DownPicker(), current=FakeRetriever(["c1", "c2"], "c"),
+        full=FakeRetriever(["c1"], "f"), writer=writer or DownWriter(), chunks=CHUNKS, k=5,
+        fallback_router=fallback, fallback_matcher=matcher,
+    )  # fmt: skip
+
+
+def test_without_a_fallback_a_model_error_still_stops_the_pipeline():
+    p = AnswerPipeline(
+        router=DownRouter(), picker=FakePicker(FACT), current=FakeRetriever(["c1"]), full=FakeRetriever(["c1"]),
+        writer=FakeWriter(Draft(True, "x", [])), chunks=CHUNKS,
+    )  # fmt: skip
+    import pytest
+
+    with pytest.raises(LLMError):
+        p.ask("What is the age of consent?")
+
+
+def test_when_the_router_is_down_the_rules_route_a_figure_question_and_the_matcher_finds_the_row():
+    p = degraded(fallback=RulesFake(Route("table")), matcher=FakeMatcher(FACT))
+    result = p.ask("What is the age of consent in the EU?")
+    assert result.kind == "table" and "The age is 16" in result.text
+    assert result.trace["degraded"] is True and result.trace["fact_key"] == "gdpr-age"
+
+
+def test_a_refusal_needs_no_model_at_all_even_when_the_router_is_down():
+    p = degraded(fallback=RulesFake(Route("refuse", "out_of_corpus")), matcher=FakeMatcher(None))
+    result = p.ask("What does the CCPA say?")
+    assert result.kind == "refused" and result.reason == "out_of_corpus" and result.trace["degraded"] is True
+
+
+def test_when_the_picker_is_down_the_matcher_chooses_the_row_but_a_poor_match_falls_back_to_the_text():
+    ok = degraded(router=FakeRouter(Route("table")), matcher=FakeMatcher(FACT))
+    assert ok.ask("What is the age of consent?").kind == "table"
+    poor = degraded(router=FakeRouter(Route("table")), matcher=FakeMatcher(None))
+    result = poor.ask("What is the age of consent?")
+    assert result.kind == "sources"  # no row matched, and the writer is down too
+
+
+def test_when_the_writer_is_down_the_passages_are_shown_without_an_answer_and_without_inventing_one():
+    p = degraded(router=FakeRouter(Route("retrieve")), picker=FakePicker(FACT), matcher=FakeMatcher(FACT))
+    result = p.ask("Do I need consent?")
+    assert result.kind == "sources" and result.trace["degraded"] is True
+    assert "unavailable" in result.text.lower() and "Processing shall be lawful" in result.text
+    assert "GDPR, Article 6" in result.text and [s.chunk_id for s in result.sources] == ["c1", "c2"]
+
+
+def test_the_degraded_message_is_in_the_questions_language():
+    p = degraded(router=FakeRouter(Route("retrieve")), matcher=FakeMatcher(None))
+    result = p.ask("¿Necesito consentimiento para tratar datos?")
+    assert result.kind == "sources" and "no está disponible" in result.text
+
+
+def test_a_working_pipeline_is_not_marked_degraded():
+    p, _ = pipeline()
+    assert p.ask("Do I need consent?").trace["degraded"] is False

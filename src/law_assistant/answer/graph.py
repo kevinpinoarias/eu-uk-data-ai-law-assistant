@@ -27,6 +27,8 @@ class State(TypedDict, total=False):
     reason: str | None
     fact: Any
     fell_back: bool
+    degraded: bool
+    model_down: bool
     query: str
     passages: list
     draft: Any
