@@ -139,6 +139,12 @@ The rule behind everything: **never trust a stage because it looks right; test i
 **What we found.** On 31 unseen questions BGE-M3 reached recall@5 0.55 against 0.19 for keyword search (paired +0.360, interval +0.204 to +0.527). The development numbers were 0.53 and 0.24, so there is no sign that the choices were fitted to the development questions. English questions are where keyword search collapses (0.02): the words of an English lay question and of the law barely overlap.
 **What it does not say.** Only the retriever was read. Rewriting, the answer layer and the date/version repairs are still unread on the test half; each gets one read, once the model's daily allowance allows.
 
+## Building and running the container
+
+**The idea.** A container is a sealed folder that runs the same everywhere. Writing the recipe (the Dockerfile) is not enough: you have to build it and run it.
+**What we found.** The first build succeeded and the container then crashed at start-up: the newest `transformers` had been installed and it needed a newer PyTorch than the one pinned for the CPU image. Pinning it, and adding a check that imports the libraries during the build, fixed it. The rebuilt image is 1.74 GB, starts healthy in 10 seconds and uses 1.5 GiB of memory at rest, which is much less than I had estimated. Asked a question while the model's daily allowance was used up, it returned the plain "allowance used up" message and wrote a trace without any address.
+**The lesson.** "It built" and "it runs" are different claims. Test the artefact you will ship.
+
 ## Does a vector database help? (R7)
 
 **The idea.** A "vector database" is a place to keep the numbers that stand for each chunk and find the closest ones to a question. The question is whether one is needed at our size.

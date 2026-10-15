@@ -14,6 +14,14 @@ What is done, what comes next and what is deliberately not planned. Dates are 20
 
 ## Next, in this order
 
+**The exact commands for the three measurements that wait for the cheap model's daily allowance (about 500 requests; resets once a day) or a paid key.** Run them in this order, on a day with at least 350 requests available; each caches its answers, so an interrupted run resumes:
+
+1. `python experiments/p4_version_aware.py --log` (finishes variant D; about 90 calls). Then apply the rule written in `experiments/p4_test_confirmation.py` to choose A or D.
+2. `python experiments/p4_test_confirmation.py --config A --log` (or `--config D`): the one read of the test half for the answer layer, about 200 calls; it refuses a second read.
+3. Build the image (done) and time 20 different uncached questions through it, then summarise with `python -m law_assistant.answer.trace_report`.
+
+Then update `EXPERIMENT_INDEX.md`, the README results table and `DECISIONS.md`, and regenerate `CHRONOLOGY.md`.
+
 1. **Measure version-aware search and in-force dates** (text as first published for questions dated before the 2026 amendment; each passage's 'in force from' date shown to the writer). Built and unit-tested; the measurement needs one day's allowance of the model's free tier, and the answer-layer results must be re-run under gold version 2.
 2. **Read the 40 test questions once**, for the chosen configuration, against the baselines. About 250 model calls. Whatever comes out is reported, including a failure.
 3. **A lawyer's review of the gold set**, if one is willing. The second round of AI review is done (version 2, `GOLD_REVIEW_2.md`).

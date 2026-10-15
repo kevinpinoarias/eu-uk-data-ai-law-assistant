@@ -192,6 +192,7 @@ Stated expectation (can be wrong): ...
 | A reviewer's "major" findings were metadata the packet omitted | tracing the dates to chunk metadata | showed a real gap in the system |
 | Search index rewrote 51 MB after every query | measuring for deployment | in-memory option for serving |
 | Expected explanations that turned out wrong (Spanish gap) | testing three explanations | concluded "probably noise" |
+| The container built but failed at start-up (an unpinned `transformers` newer than the pinned PyTorch could run) | running the image, not just building it | version bound in the dependency list and a build-time import check |
 
 ## 14. A short checklist for your own RAG project
 

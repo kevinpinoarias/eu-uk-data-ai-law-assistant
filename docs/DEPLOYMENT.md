@@ -8,14 +8,18 @@
 | A service layer: input checks, a rate limit, a trace of every question | `answer/service.py`, `answer/trace.py` | Built and tested (19 tests) |
 | A web server and one page | `src/law_assistant/serve.py`, `web/index.html` | Built, tested over real HTTP, and the page checked in a browser (desktop, phone width, dark theme) with canned answers (`--demo`) |
 | A command-line question | `python -m law_assistant.ask "..."` | Built, not run end to end (the model's free allowance for the day was used up) |
-| A container image | `Dockerfile`, `.dockerignore` | Written, **not built**: the build downloads the 2.3 GB BGE-M3 weights |
+| A container image | `Dockerfile`, `.dockerignore` | **Built and run** (15 October 2026): 1.74 GB, healthy 10 seconds after start, 1.5 GiB of memory at rest, the page and `/health` served, a question answered with the model allowance used up returned the plain 503 and wrote a trace without an address. Not yet run with a working model key |
 
 ## What was measured for deployment
 
 - **A hosted server has no graphics card, and that is fine.** BGE-M3 on this machine's CPU (an i7-8700) embeds one question in about **0.12 s** (six questions, EN and ES, 0.11 to 0.12 s each) and loads in 11 s from a warm disk. The chunk vectors are computed once and saved: 3,831 chunks, 51 MB; the chunk text is 8 MB.
-- **Memory.** The weights are 2.27 GB (full precision); the three search indexes hold the vectors as Python lists (a few hundred MB). Plan for at least 4 GB of memory.
+- **Memory.** Measured in the running container: **1.5 GiB** at rest with the model loaded (my earlier estimate of 4 GB was too high: the search indexes use NumPy arrays, 16 MB each). A host with 2 GiB should do; confirm under load.
 - **Where the time goes.** Search is a fraction of a second. The two model calls (route, write the answer) were 1.7 s on average for the answer step on the free tier; the router and table-picker calls add to that. A full per-question latency on uncached calls has not been measured yet.
 - **A serving bug found while measuring.** The search index rewrote its whole 51 MB vector file after every new question (right for experiments, which resume from it; wrong for a server). A serving index now keeps new question vectors in memory only (`persist_queries=False`), with tests.
+
+## What building and running the image taught
+
+The first image built without error and then **failed at start-up**: it had installed `transformers` 5.20.0, which needs a newer PyTorch than the pinned 2.7.1 CPU build, so importing the model class failed (the tested environment had 5.19.0). Only running the image found it. The fix is a version bound in `pyproject.toml` (`transformers>=4.40,<5.20`) and a build-time import check in the `Dockerfile`, so a mismatch fails the build. (The first attempt at the fix also wrote a literal backslash-n into the Dockerfile; reading the file back before the rebuild finished caught that.) Lesson recorded in `RAG_PLAYBOOK.md`.
 
 ## The choice that is still open: where do question embeddings come from?
 

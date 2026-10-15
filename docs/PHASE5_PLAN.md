@@ -18,7 +18,7 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 | 5.1 Service layer | Built and tested |
 | 5.2 Privacy of the demo | Retention and warning built; notice and legal basis to decide |
 | 5.3 Web page | Built, checked in a browser |
-| 5.4 Container image | Dockerfile written, not built |
+| 5.4 Container image | Built and run; healthy in 10 s, 1.5 GiB; model-key run pending |
 | 5.5 Continuous integration | Lint, tests and secret scan exist; image build and smoke test to add |
 | 5.6 Hosting | Not started (needs your account) |
 | 5.7 Traces and their report | Built and tested |
@@ -48,7 +48,7 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 
 **In this project.** An image that runs the service on a plain CPU: CPU-only PyTorch (much smaller than the default), the BGE-M3 weights (2.27 GB) downloaded at build time, the chunks (8 MB) and saved chunk vectors (51 MB) copied in, a health check, and `TRUST_PROXY=1` so the rate limit sees the visitor's address behind the host's proxy.
 **In general.** A container is a sealed folder that runs the same everywhere. Building it once and running that same image on your machine and in the cloud removes "it worked on mine".
-**The basics applied.** Measured: a question embeds in 0.12 s on an ordinary CPU, the model loads in 11 s from a warm disk, memory need 4 GB or more. Not yet done: the build itself (it downloads 2.3 GB, so I will ask first) and timing 20 uncached questions end to end.
+**The basics applied.** Measured: a question embeds in 0.12 s on an ordinary CPU; the built image is 1.74 GB, starts healthy in 10 s and uses 1.5 GiB of memory at rest. The first build failed at start-up because of an unpinned `transformers` version (fixed with a bound and a build-time import check). Verified against the real container: the page, `/health`, and the plain 503 for a used-up model allowance with a trace written. Not yet done: timing 20 uncached questions end to end, which needs the model's daily allowance.
 
 ## 5.5 Continuous integration
 
