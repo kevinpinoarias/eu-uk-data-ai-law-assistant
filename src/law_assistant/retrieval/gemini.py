@@ -57,6 +57,21 @@ def urllib_transport(
         return 599, b""  # a network failure: retried like a server error
 
 
+def _wait_after(status: int, reply: bytes, attempt: int) -> float:
+    """How long to wait before retrying. A rate limit (429) is usually per minute, so wait a good part of a
+    minute, or the delay the reply asks for; other errors get short growing pauses."""
+    if status != 429:
+        return min(60.0, 2.0**attempt)
+    try:
+        for detail in json.loads(reply).get("error", {}).get("details", []):
+            delay = detail.get("retryDelay") if isinstance(detail, dict) else None
+            if delay:
+                return float(str(delay).rstrip("s")) + 2.0
+    except (ValueError, AttributeError):
+        pass
+    return min(120.0, 15.0 * 2.0**attempt)
+
+
 class GeminiEmbedder:
     def __init__(
         self,
@@ -94,8 +109,10 @@ class GeminiEmbedder:
                 return json.loads(reply)
             retryable = status == 429 or status >= 500
             if not retryable or attempt == self.max_retries:
-                raise EmbeddingError(f"HTTP {status} from {method}: {reply[:300].decode('utf-8', 'replace')}")
-            self._sleep(min(60.0, 2.0**attempt))
+                raise EmbeddingError(
+                    f"HTTP {status} from {method}: {reply[:1500].decode('utf-8', 'replace')}"
+                )
+            self._sleep(_wait_after(status, reply, attempt))
         raise EmbeddingError("unreachable")
 
     def embed_texts(self, texts: Sequence[str]) -> list[list[float]]:

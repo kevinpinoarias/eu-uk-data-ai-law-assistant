@@ -76,8 +76,8 @@ def vec_of(text):
 
 
 class FakeTransport:
-    def __init__(self, statuses=()):
-        self.calls, self.statuses = [], list(statuses)
+    def __init__(self, statuses=(), bodies=None):
+        self.calls, self.statuses, self.bodies = [], list(statuses), list(bodies or [])
 
     def __call__(self, url, headers, body):
         payload = json.loads(body)
@@ -85,7 +85,8 @@ class FakeTransport:
         if self.statuses:
             status = self.statuses.pop(0)
             if status != 200:
-                return status, b'{"error": {"message": "rate limited"}}'
+                reply = self.bodies.pop(0) if self.bodies else b'{"error": {"message": "rate limited"}}'
+                return status, reply
         if "requests" in payload:
             texts = [r["content"]["parts"][0]["text"] for r in payload["requests"]]
             return 200, json.dumps({"embeddings": [{"values": vec_of(t)} for t in texts]}).encode()
@@ -127,12 +128,35 @@ def test_a_single_embedding_can_ask_for_a_shorter_vector():
     assert url.endswith("gemini-embedding-2:embedContent") and payload["output_dimensionality"] == 768
 
 
-def test_a_rate_limit_or_server_error_is_retried_with_growing_pauses():
-    t = FakeTransport(statuses=[429, 503, 200])
+def test_a_server_error_is_retried_with_growing_pauses():
+    t = FakeTransport(statuses=[503, 503, 200])
     pauses = []
     out = embedder(t, sleep=pauses.append, pause=0.0).embed_texts(["alpha"])
     assert out == [vec_of("alpha")] and len(t.calls) == 3
     assert pauses[0] < pauses[1]
+
+
+def test_a_rate_limit_waits_long_enough_for_a_per_minute_limit_to_reset_and_keeps_growing():
+    t = FakeTransport(statuses=[429, 429, 200])
+    pauses = []
+    embedder(t, sleep=pauses.append, pause=0.0).embed_texts(["alpha"])
+    assert pauses[0] >= 15 and pauses[1] > pauses[0]
+
+
+def test_a_rate_limit_obeys_the_delay_google_reports():
+    body = json.dumps(
+        {"error": {"code": 429, "details": [{"@type": "x.RetryInfo", "retryDelay": "42s"}]}}
+    ).encode()
+    t = FakeTransport(statuses=[429, 200], bodies=[body])
+    pauses = []
+    embedder(t, sleep=pauses.append, pause=0.0).embed_texts(["alpha"])
+    assert 42 <= pauses[0] <= 50
+
+
+def test_an_error_message_keeps_enough_of_the_reply_to_see_which_limit_was_hit():
+    long_reply = b'{"error": {"message": "' + b"x" * 900 + b' QUOTA-METRIC"}}'
+    with pytest.raises(EmbeddingError, match="QUOTA-METRIC"):
+        embedder(FakeTransport(statuses=[400], bodies=[long_reply])).embed_texts(["alpha"])
 
 
 def test_a_request_that_keeps_failing_gives_up_and_a_bad_request_is_not_retried():

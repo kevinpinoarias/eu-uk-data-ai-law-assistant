@@ -64,7 +64,7 @@ def cosine(a: list[float], b: list[float]) -> float:
 def main() -> int:
     settings.load_env_file()
     embedder = GeminiEmbedder.from_env(
-        batch_size=16, pause=2.0
+        batch_size=16, pause=4.0
     )  # gentle pace: the key may be shared with a live app
     chunks = [c for f in sorted(settings.CHUNKS_DIR.glob("*.jsonl")) for c in read_chunks(f)]
     questions = select(read_gold(settings.GOLD_DIR / "questions.jsonl"), "dev")
