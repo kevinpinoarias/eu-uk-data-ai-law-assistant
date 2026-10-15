@@ -17,6 +17,8 @@
 - **Where the time goes.** Search is a fraction of a second. The two model calls (route, write the answer) were 1.7 s on average for the answer step on the free tier; the router and table-picker calls add to that. A full per-question latency on uncached calls has not been measured yet.
 - **A serving bug found while measuring.** The search index rewrote its whole 51 MB vector file after every new question (right for experiments, which resume from it; wrong for a server). A serving index now keeps new question vectors in memory only (`persist_queries=False`), with tests.
 
+**Note:** the image described here was built before the Spanish interface, the accessibility changes and the degraded mode; rebuild it (`docker build -t law-assistant .`, layers are cached so it is quick) before any deployment.
+
 ## What building and running the image taught
 
 The first image built without error and then **failed at start-up**: it had installed `transformers` 5.20.0, which needs a newer PyTorch than the pinned 2.7.1 CPU build, so importing the model class failed (the tested environment had 5.19.0). Only running the image found it. The fix is a version bound in `pyproject.toml` (`transformers>=4.40,<5.20`) and a build-time import check in the `Dockerfile`, so a mismatch fails the build. (The first attempt at the fix also wrote a literal backslash-n into the Dockerfile; reading the file back before the rebuild finished caught that.) Lesson recorded in `RAG_PLAYBOOK.md`.

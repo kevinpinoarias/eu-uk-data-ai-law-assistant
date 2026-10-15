@@ -35,6 +35,9 @@ Generated from the git history by `scripts/make_chronology.py`; regenerate after
 | 29 | 2026-10-15 20:45 | `4f65e8f` | Second gold review (version 2), R7 vector stores, Spanish diagnostic, Phase 5 plan |
 | 30 | 2026-10-15 20:52 | `cfc1984` | Add the documentation set and pre-register the test-half retrieval confirmation |
 | 31 | 2026-10-15 21:01 | `39e9e0e` | Log T1 (retriever confirmed on the test half); pre-register the answer-layer confirmation |
+| 32 | 2026-10-15 21:08 | `91dd3f1` | Build and run the container; document the results and the remaining measurements |
+| 33 | 2026-10-15 21:16 | `bc3d683` | Add degraded mode to the pipeline and pre-register P4.7 |
+| 34 | 2026-10-15 21:24 | `a233f17` | Add Spanish page labels, accessibility checks, CI smoke test, Qwen3 embedder; pre-register R4.2 |
 
 ## What each commit said
 
@@ -552,3 +555,12 @@ paired +0.360 (+0.204 to +0.527); decision 101. P4.6 script with its rule
 for choosing the configuration and a guard against a second read.
 Dockerfile: pin transformers (<5.20) and fail the build on an import
 error; the first image started with a version mismatch.
+
+### 32. `91dd3f1` Build and run the container; document the results and the remaining measurements
+
+The first image crashed at start-up (transformers 5.20 needs a newer PyTorch
+than the pinned CPU build); fixed with a bound and a build-time import check.
+Rebuilt: 1.74 GB, healthy in 10 s, 1.5 GiB at rest, page, /health and the
+503 path verified. Decision 102, playbook and journey lessons, interview
+Q81-83, ROADMAP lists the exact commands for the three measurements that
+wait for the model's daily allowance.

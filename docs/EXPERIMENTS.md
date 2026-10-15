@@ -784,3 +784,52 @@ Decision rule met (degraded mode may be switched on): yes.
 **Against the stated expectation.** I expected refusals 5/5, table 3/4 and one false figure (q023, which the rule router sends to the table). The first two held. There was no false figure: q023's best table match scored under 0.65, so the pipeline fell through to passages. That is luck as much as design, since the threshold was set on four questions (P4.2); on new questions a similar-looking question could still pass it, which is why a degraded figure answer would be better marked as matched by similarity (not yet done) and why the mode is described as a fallback, not as the product.
 
 **What the mode does and does not do.** It does not write an answer (it says so, and shows the labelled passages), so it never invents anything; it keeps the refusals and, mostly, the exact figures; it makes a model outage a degraded service instead of an error page.
+
+
+## R4.2 a second embedding model, run 2026-10-15 (commit a233f17; gold version 2, fingerprint 8c91df9a)
+
+### R4.2 a second embedding model on the development questions (31 retrieval questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R4.1 BGE-M3 | 0.53 (0.37 to 0.69) | 0.46 (0.31 to 0.62) | 0.48 (0.34 to 0.61) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.78) |
+| R4.2 Qwen3-Embedding, with the instruction | 0.47 (0.31 to 0.62) | 0.42 (0.28 to 0.58) | 0.43 (0.30 to 0.55) | 0.58 (0.42 to 0.74) | 0.62 (0.46 to 0.77) |
+| R4.2b Qwen3-Embedding, question as typed | 0.49 (0.33 to 0.65) | 0.43 (0.29 to 0.57) | 0.43 (0.30 to 0.56) | 0.61 (0.45 to 0.77) | 0.60 (0.44 to 0.75) |
+| R4.3 fusion of BGE-M3 and R4.2 | 0.58 (0.42 to 0.73) | 0.54 (0.39 to 0.70) | 0.53 (0.39 to 0.67) | 0.65 (0.48 to 0.81) | 0.66 (0.51 to 0.80) |
+
+R4.2 Qwen3-Embedding, with the instruction against R4.1, recall@5: difference -0.065, 95 % interval -0.202 to +0.073; share of resamples in which it is not better 0.84.
+R4.2b Qwen3-Embedding, question as typed against R4.1, recall@5: difference -0.040, 95 % interval -0.169 to +0.081; share of resamples in which it is not better 0.77.
+R4.3 fusion of BGE-M3 and R4.2 against R4.1, recall@5: difference +0.048, 95 % interval -0.048 to +0.161; share of resamples in which it is not better 0.23.
+
+Chunks cut at 1024 tokens: 1 of 3831; mean 346 tokens, longest 1030. Time to embed the chunks (index build, graphics card, fp16): 1044 s (0 s if the vectors were already saved); time to embed one question: 52 ms.
+
+Recall@5 by question language (R4.1, R4.2, R4.2b, R4.3; number of questions):
+
+- en: 0.51, 0.50, 0.40, 0.63 (n = 17)
+- es: 0.55, 0.43, 0.61, 0.52 (n = 14)
+
+Recall@5 by question type (R4.1, R4.2, R4.2b, R4.3; number of questions):
+
+- as_of: 0.40, 0.40, 0.40, 0.40 (n = 5)
+- comparison: 0.35, 0.30, 0.35, 0.35 (n = 5)
+- cross_reference: 0.40, 0.55, 0.45, 0.50 (n = 5)
+- definition: 0.44, 0.44, 0.19, 0.44 (n = 4)
+- lookup: 0.75, 0.38, 0.62, 0.88 (n = 8)
+- spanish_law: 0.75, 0.88, 0.88, 0.75 (n = 4)
+
+## Reading R4.2, the second embedding model (15 October 2026)
+
+**BGE-M3 stays.** Qwen3-Embedding-0.6B (Apache-2.0, 1.19 GB, downloaded for this experiment) retrieves a little worse than BGE-M3 on the 31 development questions, and the fusion of the two is nominally better but not detectably.
+
+| Variant | recall@5 | paired difference against BGE-M3 | interval |
+|---|---|---|---|
+| R4.1 BGE-M3 | 0.53 | none | none |
+| R4.2 Qwen3-Embedding with the instruction | 0.47 | -0.065 | -0.202 to +0.073 |
+| R4.2b Qwen3-Embedding, question as typed | 0.49 | -0.040 | -0.169 to +0.081 |
+| R4.3 fusion of both (RRF, equal weights) | 0.58 | +0.048 | -0.048 to +0.161 |
+
+**Against the stated expectations.** "R4.2 lands near BGE-M3 (0.45 to 0.65) with an interval that includes 0": held (0.47). "The instruction helps a little (R4.2 at least as good as R4.2b)": **did not hold**, 0.47 against 0.49, although both are inside the noise; on Spanish questions the English instruction looks worse (0.43 with it against 0.61 without it, 14 questions), which I take as a hint to test a Spanish instruction, not as a finding. "The fusion is within 0.05 of the better model and not detectably better": held, narrowly (+0.048; interval -0.048 to +0.161).
+
+**What the numbers do show.** The two models are about equally good and make different mistakes: the fusion improves lookups (0.75 to 0.88) and English questions (0.51 to 0.63) and ties or loses elsewhere. That is the usual reason to ensemble two retrievers. With 31 questions a gain of this size cannot be told from luck, and it costs a second model on every question and a second 17-minute chunk embedding (BGE-M3 took about 5), so I do not adopt it; it stays an open candidate that would need its own pre-registration and its own read of the test half (and the test half's retrieval read has already been spent on the BGE-M3 decision).
+
+**Cost and speed.** Embedding the 3,831 chunks on the GTX 1060 took 1,044 s (BGE-M3 about 300 s). One question embeds in 52 ms. Only 1 chunk of 3,831 is longer than the 1,024-token limit (mean 346 tokens with this tokenizer). A file-naming quirk: because the model name contains a dot, the saved vectors are in `data/indexes/qwen3-embedding-0.f32` (the code replaces the text after the last dot); save and load agree, so nothing breaks, but the name is misleading.

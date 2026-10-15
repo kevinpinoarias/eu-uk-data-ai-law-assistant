@@ -25,6 +25,7 @@ All numbers are on the 31 retrieval questions (or 40 questions in all) of the **
 |---|---|
 | How well does keyword search (BM25) find the right provision? | recall@5 0.24 |
 | An open embedding model (BGE-M3, run locally)? | recall@5 **0.53**, a detectable gain over keyword search |
+| Is a second open embedding model (Qwen3-Embedding-0.6B) better than BGE-M3, alone or fused? | No: 0.47 against 0.53 alone; the fusion 0.58 is not detectably better, so BGE-M3 stays |
 | Does merging keyword and embedding search help? A reranker? Other chunk sizes, version policies, duplicate collapsing? | No detectable gain from any (the merge was worse); the reranker was 32 times slower for no gain |
 | Does BGE-M3 still beat keyword search on questions never tuned on (the sealed test half, read once)? | **Yes: recall@5 0.55 against 0.19**, paired +0.360 (+0.204 to +0.527) |
 | Does the context line (law, chapter, article) in each chunk matter? | Yes: without it recall@5 falls from 0.53 to 0.37 |
@@ -54,7 +55,7 @@ Regulator guidance, case law and adjacent laws come in later tiers. See [SOURCES
 | 2. Gold question set | 80 bilingual questions with the correct articles, a table of exact facts and the metrics, frozen before any experiment. Done (not lawyer-reviewed) |
 | 3. Retrieval experiments | Keyword, embeddings and hybrid; chunking; reranking; question rewriting. Pre-registered, judged by recall@k, MRR and nDCG with bootstrap intervals. Development half measured; a second embedding model and filters are open |
 | 4. Answer layer ([plan](docs/PHASE4_PLAN.md), [how it works](docs/HOW_THE_ANSWER_LAYER_WORKS.md)) | Understand, route, look up exact figures, retrieve, answer with quotations checked in code, or refuse or decline. Built and measured on the development half; version-aware search built, not yet measured; test half not yet read |
-| 5. Ship | Service layer with rate limit and traces, web page and server, Dockerfile: built (the image is not built yet). Deployment: not started ([plan](docs/PHASE5_PLAN.md), [measurements](docs/DEPLOYMENT.md)) |
+| 5. Ship | Service layer with rate limit, traces and a degraded mode when the model is down; web page in English and Spanish with accessibility enforced by tests; CI smoke test; container built and run. Deployment: not started ([plan](docs/PHASE5_PLAN.md), [measurements](docs/DEPLOYMENT.md)) |
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for what is done, what is next and what is not planned.
 

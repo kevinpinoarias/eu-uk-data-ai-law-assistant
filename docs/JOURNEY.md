@@ -139,6 +139,30 @@ The rule behind everything: **never trust a stage because it looks right; test i
 **What we found.** On 31 unseen questions BGE-M3 reached recall@5 0.55 against 0.19 for keyword search (paired +0.360, interval +0.204 to +0.527). The development numbers were 0.53 and 0.24, so there is no sign that the choices were fitted to the development questions. English questions are where keyword search collapses (0.02): the words of an English lay question and of the law barely overlap.
 **What it does not say.** Only the retriever was read. Rewriting, the answer layer and the date/version repairs are still unread on the test half; each gets one read, once the model's daily allowance allows.
 
+## A second embedding model (R4.2)
+
+**The idea.** One embedding model won; is it the best one, or just the first we tried? A second model (Qwen3-Embedding-0.6B, a different family and a different way of summarising a text into numbers) tells you whether the choice matters, and whether two models together beat either.
+**What we did.** After reading its model card and the downloaded pooling file (it takes the last token's output, pads on the left and wants a one-line instruction in front of each question), we wrote the plan and the rule, committed it, embedded all 3,831 chunks on the graphics card (17 minutes) and scored it exactly as BGE-M3 had been.
+**What we found.** The second model was a little worse (0.47 against 0.53, not detectably), the instruction did not help, and fusing the two gave 0.58, a nominal gain that is within the noise. So BGE-M3 stays, and the fusion is recorded as a candidate. The two models make different mistakes (lookups and English questions improve in the fusion), which is the usual reason to ensemble, but with 31 questions it cannot be told from luck.
+**The lesson.** A second candidate usually confirms the first choice or fails to beat it by a detectable margin; either way it is worth knowing, and the cost is mostly your graphics card's time.
+
+## The page in two languages, and accessible
+
+**The idea.** A bilingual project needs a bilingual interface, and "accessible" should be something you can test, not something you hope.
+**What we did.** Every label, the examples, the notice and the privacy text now exist in English and Spanish with a switch that remembers the choice and starts in the browser's language. The answer stays in the language of the question. Tests make the two dictionaries match key for key (a missing translation fails the build), check that every control has a label, that there is a skip link and an announced result area, and calculate the contrast of every text and background colour pair in both the light and dark themes (the lowest are 6.2:1 and 7.0:1; the standard asks for 4.5:1). Checked in a real browser: the switch, the stored choice, the example buttons, the badge and sources heading in Spanish, and focus moving to the result.
+**What it cannot replace.** A real screen reader and real users. The tests check structure and arithmetic; they do not tell you whether it is pleasant to use.
+
+## When the model is down: degraded mode
+
+**The idea.** A service that errors when its model is unreachable teaches users nothing. A service that degrades does the safe things it can.
+**What we did.** If the model cannot be reached, plain rules route the question, the nearest row of the figures table answers figure questions, refusals use fixed messages, and every other question gets the three most relevant passages with a notice that no answer could be written. Nothing is invented. With every model call failing on the 40 development questions: refusals 5 of 5, figures 3 of 4, no false refusals, no false figures, and the passages shown contain a required provision for 58 % of ordinary questions, in 0.01 s each.
+**The lesson.** Decide and measure the failure behaviour before launch.
+
+## A smoke test in CI
+
+**The idea.** Unit tests call code; a smoke test starts the program the way a user would and checks it is alive.
+**What we did.** CI installs only the base package (no PyTorch, no model), starts the real server in demo mode as its own process and checks `/health`, the page, an answer and the error responses. We checked the claim "works on a minimal install" in a bare local environment first.
+
 ## Building and running the container
 
 **The idea.** A container is a sealed folder that runs the same everywhere. Writing the recipe (the Dockerfile) is not enough: you have to build it and run it.

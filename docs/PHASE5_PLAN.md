@@ -17,9 +17,9 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 |---|---|
 | 5.1 Service layer | Built and tested |
 | 5.2 Privacy of the demo | Retention and warning built; notice and legal basis to decide |
-| 5.3 Web page | Built, checked in a browser |
+| 5.3 Web page | Built in English and Spanish, accessibility enforced by tests, checked in a browser |
 | 5.4 Container image | Built and run; healthy in 10 s, 1.5 GiB; model-key run pending |
-| 5.5 Continuous integration | Lint, tests and secret scan exist; image build and smoke test to add |
+| 5.5 Continuous integration | Lint, tests, secret scan and a smoke test of the real server on a minimal install |
 | 5.6 Hosting | Not started (needs your account) |
 | 5.7 Traces and their report | Built and tested |
 | 5.8 Cost and budget | Tokens measured; price and budget alert need billing |
@@ -42,7 +42,7 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 
 **In this project.** One file, no outside libraries, no tracking: a question box, four example questions (English, Spanish, an exact figure, an out-of-scope one), a result card with a label (answer, exact figure, not answered, not enough evidence), the sources with their quotations, the disclaimer, and a link to the repository.
 **In general.** For a demo the page matters less than the three things it must get right: say clearly what the tool is and is not, show where an answer came from, and work on a phone.
-**The basics applied.** Checked in a browser at desktop and phone width and in dark mode, no console errors; text is inserted with `textContent` (never as HTML) so an answer cannot inject markup; a security header restricts what the page may load. Still open: Spanish interface text (the examples are bilingual but the labels are English), and an accessibility pass with a screen reader.
+**The basics applied.** Checked in a browser at desktop and phone width and in dark mode, no console errors; text is inserted with `textContent` (never as HTML) so an answer cannot inject markup; a security header restricts what the page may load. **Spanish and accessibility (decisions 104 and 105).** The page now has a full Spanish interface with a language switch (it remembers the choice and defaults to the browser's language), checked in a real browser. Accessibility is enforced by tests: every control labelled, a skip link, the text box described, results announced politely and errors as alerts, focus moved to the result, and every text and background colour pair at WCAG AA contrast in both themes (lowest 6.2:1 light, 7.0:1 dark). Still open: a pass with a real screen reader, which no test replaces.
 
 ## 5.4 The container image (`Dockerfile`)
 
@@ -52,7 +52,7 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 
 ## 5.5 Continuous integration
 
-**In this project.** Today every push runs the linter, the formatter check, all tests (about 640) and a secret scan. To add: build the image on every change to the Dockerfile without publishing it; start the container in demo mode and check that `/health` answers and the page loads (a smoke test that needs no key); and, when deployment exists, publish the image and deploy with **keyless** authentication (the repository proves who it is to the cloud with a short-lived token, so no password is stored anywhere).
+**In this project.** Today every push runs the linter, the formatter check, all tests (about 640) and a secret scan. **Built (decision 106):** a smoke job that installs only the base package, starts the real server process in demo mode and checks health, the page, an answer and the error responses (it also proves the demo needs no PyTorch). To add: build the image without publishing it, if CI time allows; and, when deployment exists, publish the image and deploy with **keyless** authentication (the repository proves who it is to the cloud with a short-lived token, so no password is stored anywhere).
 **In general.** CI is the safety net that makes small, frequent changes safe. Keyless deployment is the current good practice because a stored password is the thing that leaks.
 **The basics applied.** The tests that need a model or key are written to skip without them, so CI stays free and fast; the 5.4 smoke test follows the same rule.
 

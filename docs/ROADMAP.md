@@ -29,7 +29,7 @@ Then update `EXPERIMENT_INDEX.md`, the README results table and `DECISIONS.md`, 
 
 ## If time allows
 
-- A second open embedding model, to test whether the 35 % of required provisions that BGE-M3 ranks beyond 30 can be reached.
+- The fusion of BGE-M3 and Qwen3-Embedding (R4.2: 0.58 against 0.53, not detectable) as its own pre-registered decision with its own test read, if the retrieval ceiling matters more than doubling the models per question.
 - A larger Gemini Flash model as the question rewriter and as the answer writer (needs a paid key; the free tier allows 20 requests a day for it).
 - An open answer model for comparison.
 - More cross-language test questions (the development half has three).

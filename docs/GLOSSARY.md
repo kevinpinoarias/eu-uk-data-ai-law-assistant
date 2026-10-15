@@ -99,3 +99,15 @@ Alphabetical. Each entry says what the thing is, then how it shows up in this pr
 **Verification (of citations).** Code that checks every quotation in an answer appears in the passage it names. A failing quotation is dropped; with none left, the answer is not shown.
 
 **Version (of a text).** The same law exists as first published ("oj") and consolidated; the GDPR and the AI Act were amended, the UK Acts are revised. Which version a question needs is half the difficulty.
+
+**Degraded mode.** What the system does when its language model cannot be reached: rules route the question, the nearest table row answers figure questions, refusals use fixed messages, and other questions get the most relevant passages with a notice. Measured with every model call failing: refusals 5/5, figures 3/4.
+
+**Last-token pooling.** A way to turn a model's per-token outputs into one vector by taking the last real token's output. Used by Qwen3-Embedding (BGE-M3 uses the first token instead).
+
+**Smoke test.** A quick check that a program starts and basic things work: here, the real server process answers health, page, answer and error requests.
+
+**WCAG contrast.** The accessibility standard's rule that text must contrast with its background by at least 4.5 to 1 (level AA). The page's lowest pair is 6.2 to 1 (light theme) and 7.0 to 1 (dark).
+
+**Instruction prefix (for an embedding model).** A short sentence placed in front of a question telling the model what the search is for ("Given a question about EU, UK or Spanish data protection or AI law, retrieve the legal provisions that answer it"). Some models need it for questions and not for passages. Here it did not help.
+
+**Ensemble.** Using two models together (here by reciprocal rank fusion) because they make different mistakes. R4.3: 0.58 against 0.53, not detectable.

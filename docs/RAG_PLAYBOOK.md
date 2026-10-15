@@ -113,6 +113,7 @@ Stated expectation (can be wrong): ...
 | Merging keyword and embeddings (RRF) | 0.43 (worse) | a weak list can drag down a strong one |
 | Reranker (cross-encoder) | 0.52, 32 times slower | standard practice is not automatic improvement |
 | Chunk size, version policy, duplicate collapsing, jurisdiction/language filters | nothing detectable | tidying what the search may return changes little |
+| A second embedding model (Qwen3-Embedding-0.6B) | 0.47 alone; fused with the first 0.58 (not detectable) | two decent models make different mistakes; ensembling is a candidate, not a free win |
 | Vector database or FAISS | same results; NumPy 0.7 ms vs 113 ms for a Python loop | not needed below hundreds of thousands of chunks |
 
 **General lessons.**
@@ -169,6 +170,7 @@ Stated expectation (can be wrong): ...
 **The idea.** Most of what goes wrong with a public AI demo is not the model: it is cost, abuse, privacy, slow starts and silent failures.
 **What we did.** A service layer that limits each visitor (6 questions a minute) and everyone (300 a day), caps question length, hides internal errors, and writes a trace per question without the visitor's address; a one-file web page (phone, dark mode, a disclaimer, no outside libraries); traces deleted after 30 days and a notice not to type personal data; a CPU container (a question embeds in 0.12 s on a CPU); CI that runs lint, tests and a secret scan; a rule that the live link goes in the README only after the sealed test half has been read.
 **The irony to remember.** A data-protection assistant that logs what people type is itself processing personal data. Apply to yourself what the tool explains.
+**Smaller shipping habits that paid off.** Make accessibility testable (labels, skip link, contrast arithmetic for every colour pair in every theme); make a bilingual interface fail CI if a translation is missing; smoke-test the real process on a minimal install; plan and measure the degraded mode; run the container before you trust it.
 - Files: `PHASE5_PLAN.md`, `DEPLOYMENT.md`.
 
 ## 12. Documentation habits that made this auditable
