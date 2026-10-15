@@ -152,6 +152,8 @@ Stated expectation (can be wrong): ...
 
 ## 10. Working with the limits of APIs and free tiers
 
+**Plan the degraded mode.** Decide what the tool does when the model is unreachable, and measure it. Here: rules route, the nearest table row answers figures, refusals are fixed messages, everything else shows the most relevant passages with a notice that no answer could be written; measured with every model call failing, it kept all refusals, 3 of 4 figures and a required provision in the shown passages for 58 % of ordinary questions. A service that degrades instead of erroring also survives quota exhaustion.
+
 **The idea.** A free tier has quotas you do not control, and they decide how many experiments you can run in a day.
 **What happened.** The first embedding run was throttled to a crawl; a generation quota (500 requests a day for the cheap model, 20 for the larger one) ran out mid-experiment, and the reply said "retry in 9 hours"; our client slept obediently and the run looked frozen. A model we planned to use was closed to new accounts; another needed more output tokens because it reasons before answering.
 **What we do now.** Fail fast on any wait over five minutes and say why; cache every model answer on disk by model, prompt and settings so a rerun makes no calls; count calls before an experiment and budget them (a full evaluation is about 250 calls); fix a prompt's wording before running, because changing it invalidates the cache.

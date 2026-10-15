@@ -759,3 +759,28 @@ Recall@5 by question language (BM25, BGE-M3; number of questions):
 **What the breakdown shows (small groups).** English questions: BM25 0.02, BGE-M3 0.55 (n = 14): keyword search almost never finds the right provision for an English lay question, because the wording of the question and the law differ. Spanish: BM25 0.32, BGE-M3 0.55 (n = 17); Spanish keyword search does better, perhaps because the Spanish legal text shares more everyday words with a Spanish question, a hypothesis I have not tested. By type, BGE-M3 is best on lookups (0.75) and Spanish-law questions (1.00) and weakest on definitions (0.25) and comparisons (0.33), where the answer needs several provisions or a precise defined term.
 
 **What this does not confirm.** Only the retriever decision (decision 76) was read on the test half. The rewriting step, the answer layer, the version-aware search and the in-force dates have not been read on the test half; the test half has no rewrites. The test half is now used for retrieval once; any further read of it for retrieval must be a new decision with its own pre-registration.
+
+
+## P4.7 degraded mode, dev half, run 2026-10-15 (commit bc3d683; gold version 2, fingerprint 8c91df9a)
+
+### P4.7 degraded mode: every model call fails (40 development questions, gold version 2)
+
+- table questions answered from the right row: 3/4 (wrong: [('q055', 'sources', None)])
+- refusals refused with the right reason: 5/5
+- false refusals (a retrieve or table question refused): 0
+- false figures (a retrieve question answered from the table): 0
+- retrieve questions ending in passages only: 31/31; the three shown passages contain a primary gold provision for 18 of them (58%)
+- seconds per question: mean 0.01, slowest 0.04
+- every result marked degraded: True
+
+Outcome of every question (kind): q003 sources, q004 sources, q005 sources, q006 sources, q007 sources, q009 sources, q013 sources, q014 sources, q016 sources, q019 sources, q020 sources, q023 sources, q025 sources, q026 sources, q028 sources, q029 sources, q030 sources, q032 sources, q041 sources, q042 sources, q043 sources, q044 sources, q047 sources, q048 sources, q049 sources, q051 sources, q052 table, q054 table, q055 sources, q057 table, q058 refused, q062 refused, q063 refused, q065 refused, q066 sources, q070 sources, q072 sources, q073 sources, q074 sources, q080 refused
+
+Decision rule met (degraded mode may be switched on): yes.
+
+## Reading P4.7, degraded mode (15 October 2026)
+
+**With the language model completely unavailable the system still behaves safely, and the pre-registered rule for switching the mode on is met.** On the 40 development questions: refusals 5 of 5 (the rules and fixed messages need no model); exact figures 3 of 4 answered from the right row (similarity found the row for q052, q054 and q057; for q055 the match score fell below the 0.65 threshold and the question went to passages instead of a wrong figure); **no false refusals and no false figures**; all 31 ordinary questions end in "passages only", and for 18 of them (58 %) the three passages shown contain a provision the gold requires, which is close to BGE-M3's recall@5 of 0.53. It takes 0.01 s per question.
+
+**Against the stated expectation.** I expected refusals 5/5, table 3/4 and one false figure (q023, which the rule router sends to the table). The first two held. There was no false figure: q023's best table match scored under 0.65, so the pipeline fell through to passages. That is luck as much as design, since the threshold was set on four questions (P4.2); on new questions a similar-looking question could still pass it, which is why a degraded figure answer would be better marked as matched by similarity (not yet done) and why the mode is described as a fallback, not as the product.
+
+**What the mode does and does not do.** It does not write an answer (it says so, and shows the labelled passages), so it never invents anything; it keeps the refusals and, mostly, the exact figures; it makes a model outage a degraded service instead of an error page.

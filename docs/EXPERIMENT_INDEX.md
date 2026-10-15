@@ -35,6 +35,7 @@ How to use this page: find the row, read the decision number in `DECISIONS.md` f
 | P4.3 | Can a model pick the table row? | Gemini picks a row or none | 4/4 right; 3 false picks on 36 other questions (my limit was 1: missed) | 87 | `p4_fact_picker.py` | P4.3 |
 | P4.4 | How good is the whole layer, and what does retrieval buy? | A five passages, B eight, C five plus rewrites (upper bound), N no retrieval | correctness 0.68, 0.69, 0.79, 0.63; **A against N +0.048 (-0.097 to +0.177): not detectable**; routing, refusals and figures all right | 88, 89 | `p4_answers.py` | P4.4 and its reading |
 | P4.5 | Do version-aware search and in-force dates repair two diagnosed failures? | variant D | see the section | 90, 98 | `p4_version_aware.py` | P4.5 |
+| P4.7 | What does the system still do when the model is unavailable? | every model call fails; rules, similarity and plain retrieval | refusals 5/5, figures 3/4, no false refusals or figures, shown passages contain a required provision for 58 % | 103 | `p4_degraded.py` | P4.7 |
 | P4.6 | The one confirmation of the answer layer on the test half | the chosen configuration against memory | not yet run (waits for the model's daily allowance) | | `p4_test_confirmation.py` | |
 | T1 | Does the retriever decision hold on the sealed test half? | BM25 and BGE-M3 on the 31 test retrieval questions, gold version 2 | **0.19 and 0.55**; paired +0.360 (+0.204 to +0.527): **confirmed** | 101 | `t1_retrieval_confirmation.py` | T1 test-half confirmation |
 

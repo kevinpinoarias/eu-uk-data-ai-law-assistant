@@ -76,9 +76,9 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 
 ## 5.9 When things fail
 
-**In this project.** What a visitor sees when something breaks: the allowance used up (503, plain message), any other model error (500, plain message, details only in the trace), a question too long or empty (400), too many questions (429). Not yet built: a fallback when the model is down (for example answering exact-figure questions from the table, which needs no model for the answer but still routes with a model), and a friendly page for the cold start.
+**In this project.** What a visitor sees when something breaks: the allowance used up (503, plain message), any other model error (500, plain message, details only in the trace), a question too long or empty (400), too many questions (429). Built: **degraded mode** (decision 103): with the model unreachable, rules route the question, the nearest table row answers figure questions, refusals use fixed messages and other questions get the three most relevant passages with a notice. Measured with every model call failing: refusals 5/5, figures 3/4, no false refusals or figures. Not yet built: a friendly page for the cold start.
 **In general.** Decide failure behaviour before launch. The worst failure of an AI demo is not an error; it is a confident wrong answer, and that is what Phase 4's quotation check exists to prevent.
-**The basics applied.** Tested: each status code and that the user never sees an internal message. Open: the table-only fallback.
+**The basics applied.** Tested: each status code, that the user never sees an internal message, and the degraded mode on the 40 development questions. Open: a cold-start notice.
 
 ## 5.10 What "done" means for Phase 5
 

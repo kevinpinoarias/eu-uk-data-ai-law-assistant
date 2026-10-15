@@ -6,14 +6,14 @@
 <title>EU/UK Data and AI Law Assistant</title>
 <style>
   :root {
-    --bg: #fafaf7; --card: #ffffff; --ink: #1d2327; --muted: #5c6670; --line: #dcdfe3;
-    --accent: #1f5f8b; --accent-ink: #ffffff; --warn-bg: #fff6dd; --warn-line: #e3c766;
+    --bg: #fafaf7; --card: #ffffff; --ink: #1d2327; --muted: #565f68; --line: #8a949e;
+    --accent: #1f5f8b; --accent-ink: #ffffff; --warn-bg: #fff6dd; --warn-line: #8a6d00;
     --ok: #1d6b3c; --no: #8a3a1f;
   }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #14181c; --card: #1c2228; --ink: #e8ebee; --muted: #9aa5b0; --line: #333c45;
-      --accent: #6db3e0; --accent-ink: #0d1c26; --warn-bg: #2d2813; --warn-line: #7a6a1f;
+    :root {
+      --bg: #14181c; --card: #1c2228; --ink: #e8ebee; --muted: #a3adb7; --line: #7b8791;
+      --accent: #6db3e0; --accent-ink: #0d1c26; --warn-bg: #2d2813; --warn-line: #b59a2b;
       --ok: #6cc38b; --no: #e69a7e;
     }
   }
@@ -21,6 +21,11 @@
   body { margin: 0; background: var(--bg); color: var(--ink);
          font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   main { max-width: 46rem; margin: 0 auto; padding: 1.5rem 16px 3rem; }
+  .skip { position: absolute; left: -999px; top: 0; background: var(--accent); color: var(--accent-ink);
+          padding: .5rem .8rem; border-radius: 0 0 8px 0; z-index: 10; }
+  .skip:focus { left: 0; }
+  .topbar { display: flex; justify-content: flex-end; align-items: center; gap: .4rem; margin-bottom: .5rem; }
+  .topbar span { color: var(--muted); font-size: .9rem; }
   h1 { font-size: 1.45rem; margin: 0 0 .25rem; }
   .sub { color: var(--muted); margin: 0 0 1rem; }
   .note { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px;
@@ -28,20 +33,26 @@
   label { display: block; font-weight: 600; margin-bottom: .35rem; }
   textarea { width: 100%; min-height: 6rem; padding: .6rem .7rem; font: inherit; color: var(--ink);
              background: var(--card); border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
-  textarea:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  textarea:focus-visible, button:focus-visible, a:focus-visible, #result:focus-visible {
+    outline: 3px solid var(--accent); outline-offset: 2px; }
+  .hint { color: var(--muted); font-size: .85rem; margin: .25rem 0 0; }
   .row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .6rem 0 0; }
-  button { font: inherit; cursor: pointer; border-radius: 8px; padding: .5rem .9rem; border: 1px solid var(--line);
-           background: var(--card); color: var(--ink); }
+  button { font: inherit; cursor: pointer; border-radius: 8px; padding: .5rem .9rem; min-height: 2.5rem;
+           border: 1px solid var(--line); background: var(--card); color: var(--ink); }
   button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); font-weight: 600; }
   button:disabled { opacity: .6; cursor: progress; }
   .examples { margin: .8rem 0 0; font-size: .9rem; color: var(--muted); }
-  .examples button { font-size: .88rem; padding: .3rem .6rem; margin: .2rem .3rem .2rem 0; }
+  .examples button { font-size: .88rem; padding: .3rem .6rem; min-height: 2rem; margin: .2rem .3rem .2rem 0; }
   #result { margin-top: 1.5rem; }
+  #result:focus { outline: none; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden;
+                     clip-path: inset(50%); white-space: nowrap; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; }
   .badge { display: inline-block; font-size: .78rem; font-weight: 700; letter-spacing: .02em; text-transform: uppercase;
            border: 1px solid currentColor; border-radius: 999px; padding: .05rem .55rem; margin-bottom: .6rem; }
   .badge.answer, .badge.table { color: var(--ok); }
-  .badge.refused, .badge.abstained, .badge.error { color: var(--no); }
+  .badge.refused, .badge.abstained, .badge.error, .badge.sources { color: var(--no); }
   .answer p { margin: 0 0 .7rem; white-space: pre-wrap; }
   h2 { font-size: .95rem; margin: 1rem 0 .3rem; }
   ul { margin: 0; padding-left: 1.2rem; }
@@ -53,42 +64,112 @@
 </style>
 </head>
 <body>
+<a class="skip" href="#q" data-i18n="skip">Skip to the question box</a>
 <main>
-  <h1>EU/UK Data and AI Law Assistant</h1>
-  <p class="sub">Ask in English or Spanish about the GDPR, the AI Act, the UK GDPR, the UK Data Protection Act 2018,
-     the Data (Use and Access) Act 2025 and Spain's LOPDGDD.</p>
-  <div class="note">This explains what public legal texts say, with the exact quotations it relied on. It is
-     <strong>not legal advice</strong>, it can be wrong or out of date, and it was not reviewed by a lawyer. Check the
-     official source before relying on it.</div>
+  <div class="topbar" role="group" aria-labelledby="langLabel">
+    <span id="langLabel" data-i18n="langLabel">Language</span>
+    <button type="button" data-lang="en" aria-pressed="true" lang="en">English</button>
+    <button type="button" data-lang="es" aria-pressed="false" lang="es">Español</button>
+  </div>
+  <h1 data-i18n="title">EU/UK Data and AI Law Assistant</h1>
+  <p class="sub" data-i18n="subtitle">Ask in English or Spanish about the GDPR, the AI Act, the UK GDPR, the UK Data Protection Act 2018, the Data (Use and Access) Act 2025 and Spain's LOPDGDD.</p>
+  <div class="note"><strong data-i18n="noticeStrong">Not legal advice.</strong> <span data-i18n="notice">This explains what public legal texts say, with the exact quotations it relied on. It can be wrong or out of date, and it was not reviewed by a lawyer. Check the official source before relying on it.</span></div>
 
   <form id="form">
-    <label for="q">Your question</label>
-    <textarea id="q" maxlength="1000" required
+    <label for="q" data-i18n="qLabel">Your question</label>
+    <textarea id="q" maxlength="1000" required aria-describedby="hint"
+              data-i18n-placeholder="qPlaceholder"
               placeholder="For example: Do I need a data protection officer in my business?"></textarea>
+    <p class="hint" id="hint"><span data-i18n="hint">Up to 1,000 characters. Please do not type personal data.</span> <span id="count" aria-hidden="true">0/1000</span></p>
     <div class="row">
-      <button class="primary" id="ask" type="submit">Ask</button>
+      <button class="primary" id="ask" type="submit" data-i18n="ask">Ask</button>
       <span id="status" role="status" class="meta"></span>
     </div>
-    <p class="examples">Try:
-      <button type="button" data-q="Under the GDPR, what does a data breach actually mean in legal terms?">What is a data breach?</button>
-      <button type="button" data-q="¿Puedo llevarme mis datos de un servicio a otro cuando cambio de proveedor?">Portabilidad (ES)</button>
-      <button type="button" data-q="What is the highest fine a company can get under EU data protection law?">Highest fine</button>
-      <button type="button" data-q="What rights do California residents have under the CCPA?">Out of scope</button>
-    </p>
+    <div class="examples" role="group" aria-labelledby="exLabel">
+      <span id="exLabel" data-i18n="examplesLabel">Try:</span>
+      <span id="exampleButtons"></span>
+    </div>
   </form>
 
-  <section id="result" aria-live="polite"></section>
+  <section id="result" tabindex="-1" aria-live="polite" aria-labelledby="resultHeading">
+    <h2 class="visually-hidden" id="resultHeading" data-i18n="resultHeading">Result</h2>
+    <div id="resultBody"></div>
+  </section>
 
-  <footer>Source code, methods and every experiment, including the failures:
-    <a href="https://github.com/kevinpinoarias/eu-uk-data-ai-law-assistant">the project repository</a>.
-    Please do not type personal data (names, ID numbers, health details) into the question box. Questions are logged without your address, to improve the system, and deleted after 30 days.</footer>
+  <footer><span data-i18n="footer">Source code, methods and every experiment, including the failures:</span>
+    <a href="https://github.com/kevinpinoarias/eu-uk-data-ai-law-assistant" data-i18n="footerLink">the project repository</a>.
+    <span data-i18n="privacy">Please do not type personal data (names, ID numbers, health details) into the question box. Questions are logged without your address, to improve the system, and deleted after 30 days.</span></footer>
 </main>
+<script type="application/json" id="i18n">
+{
+  "en": {
+    "skip": "Skip to the question box",
+    "langLabel": "Language",
+    "title": "EU/UK Data and AI Law Assistant",
+    "subtitle": "Ask in English or Spanish about the GDPR, the AI Act, the UK GDPR, the UK Data Protection Act 2018, the Data (Use and Access) Act 2025 and Spain's LOPDGDD.",
+    "noticeStrong": "Not legal advice.",
+    "notice": "This explains what public legal texts say, with the exact quotations it relied on. It can be wrong or out of date, and it was not reviewed by a lawyer. Check the official source before relying on it.",
+    "qLabel": "Your question",
+    "qPlaceholder": "For example: Do I need a data protection officer in my business?",
+    "hint": "Up to 1,000 characters. Please do not type personal data.",
+    "ask": "Ask",
+    "searching": "Searching the texts…",
+    "examplesLabel": "Try:",
+    "examples": [
+      {"label": "What is a data breach?", "q": "Under the GDPR, what does a data breach actually mean in legal terms?"},
+      {"label": "Data portability (in Spanish)", "q": "¿Puedo llevarme mis datos de un servicio a otro cuando cambio de proveedor?"},
+      {"label": "Highest fine", "q": "What is the highest fine a company can get under EU data protection law?"},
+      {"label": "Out of scope", "q": "What rights do California residents have under the CCPA?"}
+    ],
+    "resultHeading": "Result",
+    "kinds": {"answer": "Answer", "table": "Exact figure", "refused": "Not answered", "abstained": "Not enough evidence", "sources": "Passages only", "error": "Error"},
+    "sourcesHeading": "Sources",
+    "disclaimer": "This explains what the text says; it is not legal advice.",
+    "networkError": "The server could not be reached.",
+    "genericError": "Something went wrong.",
+    "footer": "Source code, methods and every experiment, including the failures:",
+    "footerLink": "the project repository",
+    "privacy": "Please do not type personal data (names, ID numbers, health details) into the question box. Questions are logged without your address, to improve the system, and deleted after 30 days."
+  },
+  "es": {
+    "skip": "Saltar al cuadro de pregunta",
+    "langLabel": "Idioma",
+    "title": "Asistente de derecho de datos e IA de la UE y el Reino Unido",
+    "subtitle": "Pregunta en inglés o en español sobre el RGPD, el Reglamento de IA, el UK GDPR, la Data Protection Act 2018 del Reino Unido, la Data (Use and Access) Act 2025 y la LOPDGDD española.",
+    "noticeStrong": "No es asesoramiento jurídico.",
+    "notice": "Esto explica lo que dicen textos legales públicos, con las citas exactas en las que se apoya. Puede equivocarse o estar desactualizado y no ha sido revisado por un abogado. Comprueba la fuente oficial antes de fiarte de él.",
+    "qLabel": "Tu pregunta",
+    "qPlaceholder": "Por ejemplo: ¿Necesito un delegado de protección de datos en mi empresa?",
+    "hint": "Hasta 1.000 caracteres. Por favor, no escribas datos personales.",
+    "ask": "Preguntar",
+    "searching": "Buscando en los textos…",
+    "examplesLabel": "Prueba:",
+    "examples": [
+      {"label": "¿Qué es una brecha de datos?", "q": "Según el RGPD, ¿qué significa exactamente una violación de la seguridad de los datos personales en términos jurídicos?"},
+      {"label": "Portabilidad de datos", "q": "¿Puedo llevarme mis datos de un servicio a otro cuando cambio de proveedor?"},
+      {"label": "Multa máxima", "q": "¿Cuál es la multa más alta que puede recibir una empresa según el derecho de protección de datos de la UE?"},
+      {"label": "Fuera del ámbito", "q": "¿Qué derechos tienen los residentes de California según la CCPA?"}
+    ],
+    "resultHeading": "Resultado",
+    "kinds": {"answer": "Respuesta", "table": "Cifra exacta", "refused": "Sin respuesta", "abstained": "Pruebas insuficientes", "sources": "Solo pasajes", "error": "Error"},
+    "sourcesHeading": "Fuentes",
+    "disclaimer": "Esto explica lo que dice el texto; no es asesoramiento jurídico.",
+    "networkError": "No se pudo contactar con el servidor.",
+    "genericError": "Algo ha ido mal.",
+    "footer": "Código fuente, métodos y todos los experimentos, incluidos los fallos:",
+    "footerLink": "el repositorio del proyecto",
+    "privacy": "Por favor, no escribas datos personales (nombres, números de identificación, datos de salud) en el cuadro de pregunta. Las preguntas se registran sin tu dirección, para mejorar el sistema, y se borran a los 30 días."
+  }
+}
+</script>
 <script>
 (function () {
+  var T = JSON.parse(document.getElementById("i18n").textContent);
   var form = document.getElementById("form"), box = document.getElementById("q");
-  var out = document.getElementById("result"), statusEl = document.getElementById("status");
-  var btn = document.getElementById("ask");
-  var LABELS = { answer: "Answer", table: "Exact figure", refused: "Not answered", abstained: "Not enough evidence", error: "Error" };
+  var out = document.getElementById("result"), body = document.getElementById("resultBody");
+  var statusEl = document.getElementById("status"), btn = document.getElementById("ask");
+  var count = document.getElementById("count");
+  var lang = "en";
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -96,53 +177,83 @@
     if (text !== undefined) n.textContent = text;
     return n;
   }
+  function stored() { try { return window.localStorage.getItem("lang"); } catch (e) { return null; } }
+  function store(v) { try { window.localStorage.setItem("lang", v); } catch (e) { /* private mode: fine */ } }
+
+  function updateCount() { count.textContent = box.value.length + "/1000"; }
+
+  function apply(next) {
+    lang = next;
+    var t = T[lang];
+    document.documentElement.lang = lang;
+    document.title = t.title;
+    document.querySelectorAll("[data-i18n]").forEach(function (n) { n.textContent = t[n.dataset.i18n]; });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach(function (n) { n.placeholder = t[n.dataset.i18nPlaceholder]; });
+    document.querySelectorAll("[data-lang]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.lang === lang ? "true" : "false"); });
+    var holder = document.getElementById("exampleButtons");
+    holder.replaceChildren();
+    t.examples.forEach(function (ex) {
+      var b = el("button", "", ex.label);
+      b.type = "button";
+      b.lang = /¿/.test(ex.q) ? "es" : "en";
+      b.addEventListener("click", function () { box.value = ex.q; updateCount(); box.focus(); });
+      holder.appendChild(b);
+    });
+  }
 
   function render(status, data) {
-    out.replaceChildren();
+    var t = T[lang];
+    body.replaceChildren();
     var card = el("div", "card");
     var kind = status === 200 ? data.kind : "error";
-    card.appendChild(el("span", "badge " + kind, LABELS[kind] || kind));
+    card.appendChild(el("span", "badge " + kind, t.kinds[kind] || kind));
     if (status !== 200) {
-      card.appendChild(el("p", "", data.error || "Something went wrong."));
-      out.appendChild(card);
-      return;
+      var p = el("p", "", data.error || t.genericError);
+      p.setAttribute("role", "alert");
+      card.appendChild(p);
+    } else {
+      var answer = el("div", "answer");
+      var main = data.answer.split("\n\nSources:")[0].split("\n\nFuentes:")[0];
+      main.split("\n\n").forEach(function (para) { answer.appendChild(el("p", "", para)); });
+      answer.lang = data.language;
+      card.appendChild(answer);
+      if (data.sources.length) {
+        card.appendChild(el("h2", "", t.sourcesHeading));
+        var list = el("ul");
+        data.sources.forEach(function (s) {
+          var li = el("li");
+          li.appendChild(el("strong", "", s.label));
+          if (s.quote) li.appendChild(el("span", "quote", ": “" + s.quote + "”"));
+          list.appendChild(li);
+        });
+        card.appendChild(list);
+      }
+      card.appendChild(el("p", "meta", t.disclaimer + " (" + data.seconds + " s)"));
     }
-    var body = el("div", "answer");
-    var main = data.answer.split("\n\nSources:")[0].split("\n\nFuentes:")[0];
-    main.split("\n\n").forEach(function (p) { body.appendChild(el("p", "", p)); });
-    card.appendChild(body);
-    if (data.sources.length) {
-      card.appendChild(el("h2", "", data.language === "es" ? "Fuentes" : "Sources"));
-      var list = el("ul");
-      data.sources.forEach(function (s) {
-        var li = el("li");
-        li.appendChild(el("strong", "", s.label));
-        if (s.quote) li.appendChild(el("span", "quote", ": “" + s.quote + "”"));
-        list.appendChild(li);
-      });
-      card.appendChild(list);
-    }
-    card.appendChild(el("p", "meta", (data.language === "es"
-      ? "Esto explica lo que dice el texto; no es asesoramiento jurídico. "
-      : "This explains what the text says; it is not legal advice. ") + "(" + data.seconds + " s)"));
-    out.appendChild(card);
+    body.appendChild(card);
+    out.focus();
   }
 
   form.addEventListener("submit", function (ev) {
     ev.preventDefault();
     var question = box.value.trim();
     if (!question) return;
-    btn.disabled = true; statusEl.textContent = "Searching the texts…"; out.replaceChildren();
+    btn.disabled = true; out.setAttribute("aria-busy", "true");
+    statusEl.textContent = T[lang].searching; body.replaceChildren();
     fetch("/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: question }) })
       .then(function (r) { return r.json().then(function (d) { return [r.status, d]; }); })
       .then(function (pair) { render(pair[0], pair[1]); })
-      .catch(function () { render(0, { error: "The server could not be reached." }); })
-      .finally(function () { btn.disabled = false; statusEl.textContent = ""; });
+      .catch(function () { render(0, { error: T[lang].networkError }); })
+      .finally(function () { btn.disabled = false; out.removeAttribute("aria-busy"); statusEl.textContent = ""; });
+  });
+  box.addEventListener("input", updateCount);
+  document.querySelectorAll("[data-lang]").forEach(function (b) {
+    b.addEventListener("click", function () { store(b.dataset.lang); apply(b.dataset.lang); });
   });
 
-  document.querySelectorAll(".examples button").forEach(function (b) {
-    b.addEventListener("click", function () { box.value = b.dataset.q; box.focus(); });
-  });
+  var start = stored() || ((navigator.language || "en").toLowerCase().indexOf("es") === 0 ? "es" : "en");
+  apply(start === "es" ? "es" : "en");
+  updateCount();
 })();
 </script>
 </body>

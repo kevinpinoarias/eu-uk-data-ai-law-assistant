@@ -11,10 +11,10 @@ the shipped default is the configuration that was measured.
 from __future__ import annotations
 
 from law_assistant import settings
-from law_assistant.answer.facts_lookup import LLMFactPicker
+from law_assistant.answer.facts_lookup import FactMatcher, LLMFactPicker
 from law_assistant.answer.generate import AnswerWriter
 from law_assistant.answer.pipeline import AnswerPipeline
-from law_assistant.answer.router import LLMRouter
+from law_assistant.answer.router import LLMRouter, RuleRouter
 from law_assistant.chunk.store import read_chunks
 from law_assistant.facts.table import read_facts
 from law_assistant.llm.gemini import GeminiGenerator
@@ -55,5 +55,8 @@ def build_pipeline(
         chunks=chunks,
         k=k,
         version_aware=version_aware,
+        # Degraded mode (decision 103): used only when the language model cannot be reached.
+        fallback_router=RuleRouter(),
+        fallback_matcher=FactMatcher(facts, embedder.embed_texts, threshold=0.65),
     )
     return pipeline, generator
