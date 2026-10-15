@@ -355,3 +355,223 @@ Against the stated expectations: "raises recall@5 above 0.53" held, and the lowe
 **Decision rule applied.** Both variants have a lower bound above 0, so both qualify; the rule keeps the higher recall@5, which is R6.2 (0.70 against 0.68). The two intervals overlap almost completely, so the data do not show that append beats replace; replace has the better MRR. R6.2 is carried forward as the working configuration.
 
 **What this does and does not show.** It shows an automatic rewriter of this kind (a strong language model that sees only the question) can lift the first search from 0.53 to about 0.70 on the development questions. It does not show it on the test half (rewrites for the test questions have not been made; they will be made by the same prompt, once, when the pipeline is confirmed). It costs one language-model call per question in the final assistant, whose latency and price are not measured here. The rewriting model knows a lot of law, so the gain is partly that model's knowledge; that is the point of the step but it means the result depends on the model chosen. Two rewrites ran over the 40-word limit it was given (longest 43 words); they were not edited. Thirty-one questions is a small sample.
+
+
+## R6.3/R6.4 question rewriting with Gemini, run 2026-10-15 (commit 3f9c7a2; gold fingerprint 7d9a62f5)
+
+### R6.3/R6.4 question rewriting with gemini-3.1-flash-lite on the development questions (31 retrieval questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R4.1 BGE-M3 | 0.53 (0.37 to 0.69) | 0.46 (0.31 to 0.62) | 0.48 (0.34 to 0.62) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.78) |
+| R6.2 agent rewrite, append | 0.70 (0.56 to 0.84) | 0.59 (0.45 to 0.73) | 0.56 (0.44 to 0.68) | 0.81 (0.68 to 0.94) | 0.75 (0.61 to 0.88) |
+| R6.3 Gemini rewrite, append | 0.56 (0.40 to 0.73) | 0.55 (0.39 to 0.70) | 0.50 (0.38 to 0.63) | 0.65 (0.48 to 0.81) | 0.70 (0.55 to 0.85) |
+| R6.4 Gemini rewrite, replace | 0.56 (0.40 to 0.71) | 0.55 (0.40 to 0.70) | 0.50 (0.37 to 0.63) | 0.68 (0.52 to 0.84) | 0.66 (0.51 to 0.81) |
+
+R6.3 (append) against R4.1, recall@5: difference +0.032, 95 % interval -0.145 to +0.210; share of resamples in which the rewrite is not better 0.40.
+R6.4 (replace) against R4.1, recall@5: difference +0.024, 95 % interval -0.145 to +0.194; share of resamples in which the rewrite is not better 0.41.
+For information, R6.3 against the agent's R6.2, recall@5: difference -0.137, 95 % interval -0.266 to -0.024.
+
+Cost of the rewrite step (31 model calls this run; cached answers are not counted): 2.25 s per call on average, median 1.76 s, slowest 15.25 s; 10589 prompt tokens and 988 output tokens in total (342 and 32 per question).
+Rewrite length in words: mean 27.8, longest 39; 0 of 31 exceed 40.
+
+Recall@5 by question language (R4.1, R6.2 agent, R6.3 Gemini append; number of questions):
+
+- en: 0.51, 0.79, 0.54 (n = 17)
+- es: 0.55, 0.59, 0.59 (n = 14)
+
+Recall@5 by question type (R4.1, R6.2 agent, R6.3 Gemini append; number of questions):
+
+- as_of: 0.40, 0.60, 0.40 (n = 5)
+- comparison: 0.35, 0.40, 0.45 (n = 5)
+- cross_reference: 0.40, 0.50, 0.50 (n = 5)
+- definition: 0.44, 0.69, 0.44 (n = 4)
+- lookup: 0.75, 1.00, 1.00 (n = 8)
+- spanish_law: 0.75, 0.88, 0.25 (n = 4)
+
+
+## R6.5 to R6.7 other rewriters, run 2026-10-15 (commit 3f9c7a2; gold fingerprint 7d9a62f5)
+
+### R6.5 to R6.7 other rewriters on the development questions (31 retrieval questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R4.1 BGE-M3 | 0.53 (0.37 to 0.69) | 0.46 (0.31 to 0.62) | 0.48 (0.34 to 0.62) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.78) |
+| R6.5 gemini-3.5-flash-lite, plain | 0.60 (0.44 to 0.75) | 0.57 (0.43 to 0.72) | 0.53 (0.41 to 0.65) | 0.71 (0.55 to 0.87) | 0.70 (0.56 to 0.84) |
+| R6.6 gemini-3.1-flash-lite, expanding | 0.64 (0.48 to 0.79) | 0.56 (0.42 to 0.71) | 0.52 (0.39 to 0.64) | 0.71 (0.55 to 0.87) | 0.69 (0.55 to 0.83) |
+| R6.7 gemini-3.5-flash-lite, expanding | 0.63 (0.48 to 0.77) | 0.57 (0.42 to 0.71) | 0.54 (0.43 to 0.66) | 0.74 (0.58 to 0.90) | 0.77 (0.64 to 0.88) |
+
+R6.5 (gemini-3.5-flash-lite, plain) against R4.1, recall@5: difference +0.065, 95 % interval -0.065 to +0.202; share of resamples in which the rewrite is not better 0.18.
+R6.6 (gemini-3.1-flash-lite, expanding) against R4.1, recall@5: difference +0.105, 95 % interval -0.032 to +0.258; share of resamples in which the rewrite is not better 0.07.
+R6.7 (gemini-3.5-flash-lite, expanding) against R4.1, recall@5: difference +0.097, 95 % interval -0.040 to +0.242; share of resamples in which the rewrite is not better 0.10.
+
+Cost of R6.5: 8.51 s per call, 342 prompt and 21 output tokens per question (31 calls); rewrite length mean 17.2 words, longest 37.
+Cost of R6.6: 3.80 s per call, 385 prompt and 67 output tokens per question (31 calls); rewrite length mean 49.1 words, longest 82.
+Cost of R6.7: 5.25 s per call, 385 prompt and 43 output tokens per question (31 calls); rewrite length mean 32.0 words, longest 59.
+
+Recall@5 by question language (R4.1, then R6.5, R6.6, R6.7; number of questions):
+
+- en: 0.51, 0.63, 0.71, 0.75 (n = 17)
+- es: 0.55, 0.55, 0.55, 0.48 (n = 14)
+
+## Reading R6.3 to R6.7, the rewriters that can run inside the pipeline (15 October 2026)
+
+**No Gemini rewriter qualifies, and the stated expectation failed.** I expected the cheap in-pipeline rewriter to land between 0.53 and 0.70 with a lower paired bound above 0. The point estimates are all above the baseline but none is detectable with 31 questions:
+
+| Rewriter (question followed by the rewrite) | recall@5 | paired difference against R4.1 | interval |
+|---|---|---|---|
+| R4.1 BGE-M3 alone | 0.53 | none | none |
+| R6.3 gemini-3.1-flash-lite, plain prompt | 0.56 | +0.032 | -0.145 to +0.210 |
+| R6.5 gemini-3.5-flash-lite, plain prompt | 0.60 | +0.065 | -0.065 to +0.202 |
+| R6.6 gemini-3.1-flash-lite, expanding prompt | 0.64 | +0.105 | -0.032 to +0.258 |
+| R6.7 gemini-3.5-flash-lite, expanding prompt | 0.63 | +0.097 | -0.040 to +0.242 |
+| R6.2 the blind agent's rewrites | 0.70 | +0.169 | +0.040 to +0.315 |
+
+R6.4 (the Gemini rewrite alone, gemini-3.1-flash-lite) was 0.56 (+0.024, -0.145 to +0.194). The agent's rewrites beat R6.3 by 0.137 (interval 0.024 to 0.266 in the agent's favour). The "expanding" prompt, which asks the model to add the specific legal terms the provision would contain, was designed after seeing R6.3's development results, so it is a tuned variant: its +0.07 over the plain prompt is suggestive, not shown. Together they lean the same way (a rewrite helps and a richer one helps more), but my rule does not let me add up non-significant results.
+
+**Decision rule applied.** No variant has a lower bound above 0, so the in-pipeline rewrite step is **not adopted**; the agent's 0.70 is reported as an upper bound with a stronger writer, not as the system's score. Per the pre-registration there is no further prompt or model tuning on the development half.
+
+**What stopped a fair test of a stronger model.** `gemini-3.5-flash` (the larger Flash model) allows 20 requests a day on the free tier; 22 of the 62 calls I needed went through, then the quota was used up (the reply said to retry in 9 hours 28 minutes). `gemini-2.5-flash` is closed to new accounts. Those two variants were dropped before anything was scored and replaced by the two generations of Flash-Lite; a larger model needs billing on the key. The same message exposed a flaw in my client: it obeyed the 9-hour retry delay by sleeping, so the run looked frozen for 11 minutes. Both Gemini clients now stop at once when the wait exceeds five minutes. The earlier "stall" of the embedding run (640 of 3,304 vectors) may well have been the same thing; I never read its reply text closely enough to confirm.
+
+**Cost of the rewrite step (per question, from the calls this run).** About 342 to 385 prompt tokens and 21 to 67 output tokens. Time per call varied from 2.25 s (median 1.76 s, slowest 15 s) for gemini-3.1-flash-lite to 8.5 s for gemini-3.5-flash-lite in this run; the free tier is not a measure of paid-tier speed. No price is stated because none was verified.
+
+
+## P4.1 reading the question, dev half, run 2026-10-15 (commit 3f9c7a2; gold fingerprint 7d9a62f5)
+
+### P4.1 reading the question: language, jurisdictions, date (dev half, 40 questions)
+
+- language: 40/40 correct
+- jurisdictions: exactly the gold set 35/40; every gold jurisdiction found 36/40; something extra named 1/40
+- as-of: 1/1 of the questions with a stated date read correctly; 0 questions got a date the gold does not have
+
+Misses (id, what was detected, gold):
+
+- q019: jurisdictions [] (gold ['EU'])
+- q026: jurisdictions [] (gold ['EU'])
+- q062: jurisdictions ['ES'] (gold [])
+- q073: jurisdictions ['EU', 'UK'] (gold ['EU', 'UK', 'ES'])
+- q080: jurisdictions ['ES'] (gold ['ES', 'EU'])
+
+
+## P4.2 routing and table lookup, dev half, run 2026-10-15 (commit 3f9c7a2; gold fingerprint 7d9a62f5)
+
+### P4.2 routing on the development questions (40: 31 retrieve, 4 table, 5 refuse)
+
+**rules router.** Accuracy 0.975 (39/40).
+Refusals sent to refuse 5/5 (right reason 5/5); false refusals 0; table questions sent to table 4/4; table false alarms 1.
+
+**llm router.** Accuracy 1.000 (40/40).
+Refusals sent to refuse 5/5 (right reason 5/5); false refusals 0; table questions sent to table 4/4; table false alarms 0.
+
+Disagreements with the gold route (id, gold, rules, model, text):
+
+- q023: gold retrieve, rules table, model retrieve: En la UE, ¿cómo puedo obtener una copia de los datos que una empresa tiene sobre mí y en cuánto tiempo debe dármela?
+
+Table lookup (top fact, its score, whether it is the gold row):
+
+- q052: gdpr-fine-upper-tier (0.68), gold gdpr-fine-upper-tier: right
+- q054: gdpr-breach-notification-deadline (0.70), gold gdpr-breach-notification-deadline: right
+- q055: gdpr-breach-notification-deadline (0.64), gold gdpr-response-deadline: WRONG
+- q057: gdpr-child-consent-age (0.74), gold gdpr-child-consent-age: right
+
+Lowest score of a correct match 0.68, so the threshold is 0.65. Of the 37 other development questions, 3 would still get a fact at that threshold (highest 0.73); the router sends only figure questions here, so this is the share that would be wrongly answered if routed to the table.
+
+
+## P4.3 model-picked table row, dev half, run 2026-10-15 (commit 3f9c7a2; gold fingerprint 7d9a62f5)
+
+### P4.3 the model picks the table row (40 development questions)
+
+- table questions right: 4/4; wrong row: 0
+- false picks on the 36 other questions: 3
+
+Misses:
+
+- q009 (retrieve): picked ai-act-fine-prohibited-practices for a question that is not a figure question
+- q023 (retrieve): picked gdpr-response-deadline for a question that is not a figure question
+- q044 (retrieve): picked ai-act-high-risk-application-dates for a question that is not a figure question
+
+
+## P4.4 answer layer, dev half, run 2026-10-15 (commit 3f9c7a2; gold fingerprint 7d9a62f5)
+
+### P4.4 the answer layer on the development questions (40 questions)
+
+**Variant A (k = 5).**
+- retrieve questions (31): answered 25, abstained 6, refused 0, from the table 0; correctness 0.68 (0.53 to 0.82)
+- among the 25 answered: support 0.86; a cited source satisfies a primary gold provision 0.64; coverage of the primary provisions 0.55; strict precision 0.64
+- table questions answered from the right row: 4/4; refusals refused with the right reason: 5/5; retrieve questions refused 0
+- model time per question (excluding search and judging calls made outside the pipeline is not separable here): mean 1.74 s, median 1.85 s, slowest 3.31 s; tokens per question 1706 in, 244 out (includes the judge calls for this question)
+
+**Variant B (k = 8).**
+- retrieve questions (31): answered 26, abstained 5, refused 0, from the table 0; correctness 0.69 (0.55 to 0.82)
+- among the 26 answered: support 0.88; a cited source satisfies a primary gold provision 0.77; coverage of the primary provisions 0.62; strict precision 0.68
+- table questions answered from the right row: 4/4; refusals refused with the right reason: 5/5; retrieve questions refused 0
+- model time per question (excluding search and judging calls made outside the pipeline is not separable here): mean 1.76 s, median 1.92 s, slowest 5.26 s; tokens per question 2536 in, 241 out (includes the judge calls for this question)
+
+**Variant C (k = 5 with the blind agent's rewrites (upper bound)).**
+- retrieve questions (31): answered 27, abstained 4, refused 0, from the table 0; correctness 0.79 (0.65 to 0.92)
+- among the 27 answered: support 0.80; a cited source satisfies a primary gold provision 0.74; coverage of the primary provisions 0.60; strict precision 0.72
+- model time per question (excluding search and judging calls made outside the pipeline is not separable here): mean 2.61 s, median 2.25 s, slowest 7.66 s; tokens per question 2055 in, 338 out (includes the judge calls for this question)
+
+**Baseline N (no retrieval).** correctness 0.63 (0.50 to 0.76); no quotations to check.
+
+B against A, correctness: difference +0.016, 95 % interval -0.065 to +0.113
+A against N, correctness: difference +0.048, 95 % interval -0.097 to +0.177
+C against A, correctness: difference +0.113, 95 % interval -0.016 to +0.258
+
+The corpus is 3,831 chunks and about 833,327 words (roughly 1,249,990 tokens), so it does not fit in a prompt of one million tokens once Spanish, the original texts and the markup are counted; that baseline is not run.
+
+Questions answered wrongly or not at all in variant A (id, route outcome, correctness):
+
+- q004 (retrieve): abstained, no: no answer given
+- q013 (retrieve): answer, partly: The answer focuses exclusively on human oversight and omits several other key obligations for deployers under the AI Act, such as data input requirements, logging, incident reporting, and fundamental rights impact assessments.
+- q014 (retrieve): abstained, no: no answer given
+- q023 (retrieve): abstained, no: no answer given
+- q028 (retrieve): abstained, no: no answer given
+- q030 (retrieve): answer, partly: The answer incorrectly claims that the balancing test applies to the UK's 'recognised legitimate interests' (Article 6(1)(ea)), whereas the reference answer correctly notes that the balancing test is not required once an Annex 1 condition is met.
+- q042 (retrieve): answer, partly: The answer correctly identifies the right to erasure for data provided by the user and minors, but it fails to mention the right to erasure for data provided by third parties as outlined in Article 94(2) of the LOPDGDD.
+- q043 (retrieve): abstained, no: no answer given
+- q047 (retrieve): answer, partly: The answer correctly identifies the AI Office as the supervisor but fails to mention the specific exceptions regarding high-risk systems (Annex I/III) and the comprehensive enforcement powers (fines, binding commitments) detailed in the reference.
+- q048 (retrieve): answer, no: The answer incorrectly claims the original text used 'or' and that the wording has not changed, failing to identify the 'and' to 'or' correction that occurred in the corrigendum.
+- q049 (retrieve): abstained, no: no answer given
+- q051 (retrieve): answer, partly: The answer correctly identifies the criteria for a 'malicious person' and the conditions for erasure, but it fails to mention the start date of 31 March 2026 as requested by the question.
+- q058 (refuse): refused, no: no answer given
+- q062 (refuse): refused, no: no answer given
+- q063 (refuse): refused, no: no answer given
+- q065 (refuse): refused, no: no answer given
+- q073 (retrieve): answer, partly: The answer correctly explains the UK procedure but fails to provide the requested comparison with the EU, incorrectly stating that the provided texts do not contain enough information to do so.
+- q080 (refuse): refused, no: no answer given
+
+## Reading P4.1 to P4.4, the answer layer on the development questions (15 October 2026)
+
+All numbers are for the 40 development questions (31 retrieve, 4 table, 5 refuse). The rules and prompts were written after I had seen the shape of the development labels, so these numbers are optimistic; the test half has not been read and is read once, at the end.
+
+**P4.1 reading the question (rules).** Language 40 of 40. Jurisdictions exactly equal to the gold set on 35 of 40 (every gold jurisdiction found on 36); misses: q019 and q026 name no place or law in their text (gold: EU), q062 mentions the Spanish regulator in a question the gold treats as outside the corpus, q073 and q080 where the gold adds a second jurisdiction the words do not name. One stated date read correctly (q044, "the start of 2026"). The expectation of about 0.75 on jurisdictions was too low; 0.875 was reached, but with rules written knowing the development labels.
+
+**P4.2 routing.** The model router (gemini-3.1-flash-lite applying written definitions and no examples from the gold set) got 40 of 40; the rule router 39 of 40 (it sent q023, "how do I get a copy of my data and within what time", to the table; the gold says retrieve). Neither made a false refusal; both sent 5 of 5 refusals to refuse with the right reason and 4 of 4 figure questions to the table. The expectation that the rules would reach only about 0.85 was wrong (0.975). The lesson I draw is cautious: the development half has only 5 refusals and 4 table questions, so this does not show the rules would survive new wording. The model router is used by the pipeline; the rule router stays as the free baseline.
+
+**P4.2 table lookup by embeddings.** The nearest fact by cosine similarity was right for 3 of 4 table questions; for q055 (the deadline to answer a rights request) it chose the breach-notification deadline (score 0.64 against 0.68 to 0.74 for the correct ones).
+
+**P4.3 a model picks the row.** gemini-3.1-flash-lite given the 19 keys and subjects picked the right row for 4 of 4 table questions, and picked a row for 3 of the 36 other questions (q009, q023, q044). My pre-registered rule was 4 of 4 with at most 1 false pick, so **the rule was not met**. The picker is only called after the router has chosen the table, and in the end-to-end run (P4.4) no retrieve question was answered from the table, so I use it behind the router and record the miss here.
+
+**P4.4 the whole layer.**
+
+| | A: 5 passages | B: 8 passages | C: 5 + blind-agent rewrites (upper bound) | N: no retrieval |
+|---|---|---|---|---|
+| retrieve questions answered / abstained | 25 / 6 | 26 / 5 | 27 / 4 | not applicable |
+| correctness by model judge (95 % interval) | 0.68 (0.53 to 0.82) | 0.69 (0.55 to 0.82) | 0.79 (0.65 to 0.92) | 0.63 (0.50 to 0.76) |
+| claims supported by the cited quotations (answered) | 0.86 | 0.88 | 0.80 | no quotations |
+| a cited source satisfies a primary gold provision (answered) | 0.64 | 0.77 | 0.74 | none |
+| coverage of the primary gold provisions | 0.55 | 0.62 | 0.60 | none |
+
+Table questions answered from the right row 4 of 4; refusals refused with the right reason 5 of 5; retrieve questions refused 0 (all three variants).
+Paired differences in correctness: B against A +0.016 (-0.065 to +0.113); A against N +0.048 (-0.097 to +0.177); C against A +0.113 (-0.016 to +0.258). **None is detectable.** By question type (A, C, N): as_of 0.40, 0.40, 0.20; comparison 0.60, 0.60, 0.50; cross_reference 0.80, 0.90, 0.70; definition 0.75, 1.00, 0.88; lookup 0.81, 0.94, 0.81; spanish_law 0.62, 0.88, 0.62. By language: English 0.65, 0.79, 0.59; Spanish 0.71, 0.79, 0.68.
+
+Against the stated expectations: correctness 0.45 to 0.60 for A was too low (0.68, helped by a generous judge, below); 20 to 30 percent abstentions held roughly (6 of 31); support of at least 0.9 did **not** hold (0.86; the code guarantees every quotation exists, not that every claim follows from it); refusals and table 5/5 and 4/4 held; "N scores below A" held on the point estimate but is not detectable; "B not detectably better than A" held; "C higher than A" held on the point estimate, not detectably.
+
+**Decision rule applied.** B does not replace A (the interval of its gain includes 0), so five passages stay. The system is **not shown to be more correct than the same model answering from memory** (+0.048, interval -0.097 to +0.177). That is the honest result. What retrieval adds in this design is not measured by that number: every quotation in an answer is checked in code to exist in a retrieved passage, answers name the law, provision and text version, out-of-corpus and advice questions are refused, and an answer with no valid quotation becomes an abstention. The memory baseline offers none of these, and it can be wrong about texts newer than its training (the 2025 UK Act, the 2026 amendment), which is where retrieval scored highest relative to memory (as_of 0.40 against 0.20, 5 questions).
+
+**A person read the judge's work.** I read the answers and verdicts of 12 questions (q006, q009, q016, q019, q020, q025, q026, q032, q044, q048, q052, q066) as an AI assistant, not as a lawyer. I agreed with the judge on 10. On two it was too generous: q044 (asked as of the start of 2026, the answer gave the dates from the July 2026 amending regulation and the judge passed it) and q032 (the answer covers the UK's new definitions but not the separate research chapter the reference describes, judged "yes" where I would say "partly"). So the correctness figures are probably a little high for every variant, including the baseline.
+
+**Two failures found by reading; a fix written, not yet measured.** q044 shows the search offered the 2026 amending regulation to a question about the start of 2026; q048 (asked about the wording "as first published") was searched in the current text only, which hides the original wording, and was answered wrongly (the judge was right to fail it). Variant D (experiment p4_version_aware.py, pre-registered) searches the text as first published without the amending regulation for questions dated before 27 July 2026, and every version for questions about the original wording. **It has not been run**: the free tier of gemini-3.1-flash-lite allows 500 requests a day and today's allowance was used up (the client stopped at once and reported that the quota resets in about eight and a half hours). D is a tuned variant, designed from these two development failures.
+
+**What the free tier cost.** The experiments of 15 October used well over 500 requests of one model. Each full evaluation of the answer layer is about 250 model calls (answers, two judge verdicts each, a baseline), so the one confirmation on the test half needs a day's allowance on its own. A paid key would lift this; until then the confirmation has to be scheduled.

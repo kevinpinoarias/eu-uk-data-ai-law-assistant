@@ -1,0 +1,31 @@
+{"id": "q003", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "RGPD evaluación de impacto relativa a la protección de datos obligación responsable del tratamiento"}
+{"id": "q004", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "designation of a data protection officer controller processor GDPR"}
+{"id": "q005", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "derecho a la portabilidad de los datos personales en el RGPD respecto al responsable del tratamiento"}
+{"id": "q006", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "right to compensation and liability of the controller or processor for material or non-material damage under the GDPR"}
+{"id": "q007", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "articulado relativo al contrato entre el responsable del tratamiento y el encargado del tratamiento conforme al RGPD de la UE"}
+{"id": "q009", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "social scoring high-risk AI system prohibited practices Regulation (EU) 2024/1689 AI Act"}
+{"id": "q013", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "obligations of a deployer of a high-risk AI system under the AI Act"}
+{"id": "q014", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "personal data scope material application GDPR"}
+{"id": "q016", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "personal data breach definition GDPR security incident confidentiality integrity availability"}
+{"id": "q019", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "Diferencia entre modelo de inteligencia artificial de propósito general y sistema de alta riesgo según el Reglamento de IA."}
+{"id": "q020", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "classification requirements for a high-risk AI system under the EU AI Act for a deployer"}
+{"id": "q023", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "RGPD derecho de acceso del interesado obtención de copia de datos personales y plazo de respuesta del responsable del tratamiento"}
+{"id": "q025", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "relationship between fundamental rights impact assessment under the EU AI Act and data protection impact assessment under the GDPR for deployers and controllers"}
+{"id": "q026", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "AI Act GDPR provider processing of special categories of personal data for bias monitoring and correction in high-risk AI systems"}
+{"id": "q028", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "GDPR and UK GDPR automated individual decision-making right to object and human intervention provisions comparison"}
+{"id": "q029", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "edad del consentimiento del interesado en relación con los servicios de sociedad de la información según el RGPD, la LOPDGDD y el UK GDPR"}
+{"id": "q030", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "recognized legitimate interest UK GDPR and legitimate interests legal basis EU GDPR balancing test"}
+{"id": "q032", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "UK GDPR and Data Protection Act 2018 exemptions and derogations for processing personal data for scientific or historical research purposes and statistical purposes compared to EU GDPR."}
+{"id": "q041", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "derecho al olvido derecho de supresión motores de búsqueda LOPDGDD RGPD"}
+{"id": "q042", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "derecho de supresión derecho al olvido responsable del tratamiento LOPDGDD RGPD"}
+{"id": "q043", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "calificación de la infracción por incumplimiento de la obligación de notificar una violación de la seguridad de los datos personales a la autoridad de control conforme al RGPD y a la LOPDGDD"}
+{"id": "q044", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "Reglamento de IA fecha de aplicación de las normas relativas a los sistemas de inteligencia artificial de alto riesgo"}
+{"id": "q047", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "autoridad de vigilancia del mercado competencias sistemas de inteligencia artificial basados en modelos de uso general Reglamento de IA"}
+{"id": "q048", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "data protection officer mandatory designation core activities regular and systematic monitoring data subjects GDPR text evolution"}
+{"id": "q049", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "Data (Use and Access) Act 2025 recognised legitimate interest UK GDPR data processing start date"}
+{"id": "q051", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "Data Protection Act 2018 right of erasure application date to controllers for personal data processed in connection with processing by a malicious person and definition of a malicious person under UK GDPR and Data Protection Act 2018"}
+{"id": "q066", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "GDPR territorial scope controller establishment processing of data subjects in the Union offering of goods or services monitoring of behavior"}
+{"id": "q070", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "Requisito de consentimiento libre RGPD RGPD"}
+{"id": "q072", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "autoridad de vigilancia del mercado, autoridad nacional competente y Oficina de Inteligencia Artificial en el marco del Reglamento de IA"}
+{"id": "q073", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "obligación de reclamación previa al responsable del tratamiento en el UK GDPR en comparación con el RGPD de la Unión Europea"}
+{"id": "q074", "model": "gemini-3.5-flash-lite", "prompt": "plain", "rewrite": "RGPD LOPDGDD derecho de oposición exclusión publicitaria lista de exclusión publicitaria"}

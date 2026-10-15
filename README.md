@@ -2,7 +2,7 @@
 
 A bilingual (English and Spanish) retrieval-augmented assistant for EU, Spanish and UK data-protection and AI law. It aims to answer questions with verified citations, say when it does not know, and measure every design choice instead of assuming it.
 
-> **Status: building (October 2026).** Fetching, parsing, chunking, the frozen 80-question test set, the facts table, the evaluation metrics and the first retrieval experiments are done; embedding retrieval with the open BGE-M3 model and a question-rewriting step have been measured on the development half (recall@5 from 0.24 with keyword search to 0.53, and about 0.70 with rewriting); a confirmation on the test half and the answer layer are next. For a plain-words walk through every step and why it was taken, see [docs/JOURNEY.md](docs/JOURNEY.md). It is not legal advice.
+> **Status: building (October 2026).** Fetching, parsing, chunking, the frozen 80-question gold set, the facts table, the metrics, the retrieval experiments and a first answer layer are built and measured on the development half. The 40 test questions have not been read yet; that confirmation is the next milestone. For a plain-words walk through every step and why it was taken, see [docs/JOURNEY.md](docs/JOURNEY.md); for the answer layer, [docs/HOW_THE_ANSWER_LAYER_WORKS.md](docs/HOW_THE_ANSWER_LAYER_WORKS.md). It is not legal advice.
 
 ## Why this project
 
@@ -14,6 +14,22 @@ What makes the problem interesting:
 - **Law changes.** Amendments and commencement dates mean an answer must say which version it used.
 - **Citations must be checkable.** Every answer cites its source, and the citation is verified in code.
 - **Knowing when not to answer.** Out-of-scope questions and requests for legal advice are refused.
+
+## What has been measured so far
+
+All numbers are on the 31 retrieval questions (or 40 questions in all) of the **development** half of the frozen gold set, with 95 % intervals in the experiment log. The gold set was drafted by an AI assistant, checked by scripts and AI reviews, and is **not lawyer-reviewed**.
+
+| Question | Result |
+|---|---|
+| How well does keyword search (BM25) find the right provision? | recall@5 0.24 |
+| An open embedding model (BGE-M3, run locally)? | recall@5 **0.53**, a detectable gain over keyword search |
+| Does merging keyword and embedding search help? A reranker? Other chunk sizes, version policies, duplicate collapsing? | No detectable gain from any (the merge was worse); the reranker was 32 times slower for no gain |
+| Does the context line (law, chapter, article) in each chunk matter? | Yes: without it recall@5 falls from 0.53 to 0.37 |
+| Does rewriting the question in legal vocabulary help? | A strong writer: 0.53 to 0.70. Cheap in-system models: +0.03 to +0.11, not detectable, so not adopted |
+| Does the answer layer route correctly? | 40 of 40 questions routed right, 5 of 5 refusals, 4 of 4 exact figures from the right table row |
+| Is the answer layer more *correct* than the same model answering from memory? | **Not detectably** (0.68 against 0.63). Its value is checked quotations, named sources and versions, and refusals, not a measured accuracy gain |
+
+Everything is pre-registered and logged in [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md), including the experiments that failed; the reasons behind each choice are in [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Scope of the first version (Tier 1)
 
@@ -32,9 +48,11 @@ Regulator guidance, case law and adjacent laws come in later tiers. See [SOURCES
 | 0. Sources and licences | Confirm what may be reused and how, and which versions exist. Done |
 | 1. Ingestion and chunking | Polite fetchers; chunks by legal structure with citation and as-of-date metadata. Done |
 | 2. Gold question set | 80 bilingual questions with the correct articles, a table of exact facts and the metrics, frozen before any experiment. Done (not lawyer-reviewed) |
-| 3. Retrieval experiments (in progress) | Keyword, embeddings and hybrid; chunking; embedding models; reranking; filters; vector store comparison. Pre-registered, judged by hit@k, recall@k, MRR and nDCG with bootstrap intervals |
-| 4. Answer layer (planned: [docs/PHASE4_PLAN.md](docs/PHASE4_PLAN.md)) | A LangGraph workflow: route, retrieve, grade, answer with citations, verify, or abstain; compared with no retrieval and with the whole corpus in the prompt |
-| 5. Ship | API, interface, Docker, CI, deployment and retrieval traces |
+| 3. Retrieval experiments | Keyword, embeddings and hybrid; chunking; reranking; question rewriting. Pre-registered, judged by recall@k, MRR and nDCG with bootstrap intervals. Development half measured; a second embedding model and filters are open |
+| 4. Answer layer ([plan](docs/PHASE4_PLAN.md), [how it works](docs/HOW_THE_ANSWER_LAYER_WORKS.md)) | Understand, route, look up exact figures, retrieve, answer with quotations checked in code, or refuse or decline. Built and measured on the development half; version-aware search built, not yet measured; test half not yet read |
+| 5. Ship | API, interface, Docker, CI, deployment and retrieval traces. Not started |
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for what is done, what is next and what is not planned.
 
 ## Development
 
@@ -60,6 +78,8 @@ python -m law_assistant.retrieval.get_reranker  # optional, 2.3 GB, only for the
 ```
 
 Without a graphics card install the CPU build of PyTorch instead and expect slower embedding. The saved vectors are not in the repository and are rebuilt from the chunks.
+
+**Optional: the answer layer.** It calls Google's Gemini API (`gemini-3.1-flash-lite`) for routing and for writing answers. Put `GEMINI_API_KEY` in `.env` (never commit it). The free tier allows about 500 requests a day for this model, which is enough for exploring but not for a full evaluation; the clients stop at once and say so when a quota is used up. To draw the pipeline as a LangGraph graph: `python -m pip install -e ".[agent]"`.
 
 ## Disclaimer
 

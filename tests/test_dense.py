@@ -264,3 +264,19 @@ def test_a_shorter_vector_is_made_by_truncating_and_renormalising():
     with tempfile.TemporaryDirectory() as d:
         index = DenseIndex([chunk("a", "x", context="")], Wide(), Path(d) / "v", dimensions=2)
         assert index.scored("anything", 1)[0][1] == pytest.approx(1.0)
+
+
+def test_the_embedding_client_also_fails_at_once_when_the_quota_resets_in_hours():
+    from law_assistant.retrieval.gemini import EmbeddingError, GeminiEmbedder
+
+    quota = json.dumps({"error": {"details": [{"retryDelay": "34129s"}]}}).encode()
+    sleeps, calls = [], []
+
+    def transport(url, headers, body):
+        calls.append(1)
+        return 429, quota
+
+    embedder = GeminiEmbedder("k", transport=transport, sleep=sleeps.append)
+    with pytest.raises(EmbeddingError, match="quota"):
+        embedder.embed_texts(["a"])
+    assert sleeps == [] and len(calls) == 1

@@ -126,3 +126,15 @@ def test_a_question_about_the_past_goes_to_the_original_text_and_any_other_to_th
     assert router.search("old?", 5) == ["from-original"]
     assert router.search("now?", 5) == ["from-current"]
     assert router.search("undated?", 5) == ["from-current"]
+
+
+def test_text_before_the_amendment_is_the_original_text_without_the_amending_regulation():
+    from law_assistant.retrieval.policies import before_amendment_text
+
+    chunks = [
+        chunk("orig", version="oj"),
+        chunk("cons", version="consolidated-20260727"),
+        chunk("amend", instrument="eu-ai-omnibus", version="oj"),
+        chunk("uk", instrument="uk-gdpr", version="revised-20261014"),
+    ]
+    assert ids(before_amendment_text(chunks)) == ["orig", "uk"]

@@ -20,3 +20,15 @@ Two things to keep in mind when reading results:
   rewriter help", and the final assistant would use a language model for this step too. It is not a test of a
   specific product.
 - Only the development half has rewrites. The test half has none and is untouched.
+
+## Files
+
+| File | Who wrote the rewrites | Experiment |
+|---|---|---|
+| `r6_dev.jsonl` | A separate agent (Claude Sonnet) that saw only the question texts | R6.1, R6.2 (recall@5 0.68 and 0.70; an upper bound) |
+| `r6_gemini_dev.jsonl` | gemini-3.1-flash-lite, plain instructions | R6.3, R6.4 |
+| `r6_5_dev.jsonl` | gemini-3.5-flash-lite, plain instructions | R6.5 |
+| `r6_6_dev.jsonl` | gemini-3.1-flash-lite, instructions that also ask for the legal terms the provision would contain | R6.6 |
+| `r6_7_dev.jsonl` | gemini-3.5-flash-lite, the same expanding instructions | R6.7 |
+
+The cheap in-system rewriters (R6.3 to R6.7) gave +0.03 to +0.11 in recall@5 with every interval including zero, so none is used by the pipeline (decision 84). The expanding instructions were written after seeing the development results of R6.3.

@@ -72,6 +72,17 @@ def _wait_after(status: int, reply: bytes, attempt: int) -> float:
     return min(120.0, 15.0 * 2.0**attempt)
 
 
+MAX_WAIT_SECONDS = 300.0
+
+
+def quota_message(status: int, reply: bytes, wait: float) -> str | None:
+    """A rate limit asks for a pause of seconds; a used-up daily quota asks for hours. Sleeping for hours
+    inside an experiment looks like a freeze, so a wait longer than MAX_WAIT_SECONDS is reported instead."""
+    if status == 429 and wait > MAX_WAIT_SECONDS:
+        return f"the quota is used up and resets in about {wait / 3600:.1f} hours (waiting is not worth it)"
+    return None
+
+
 class GeminiEmbedder:
     def __init__(
         self,
@@ -112,7 +123,13 @@ class GeminiEmbedder:
                 raise EmbeddingError(
                     f"HTTP {status} from {method}: {reply[:1500].decode('utf-8', 'replace')}"
                 )
-            self._sleep(_wait_after(status, reply, attempt))
+            wait = _wait_after(status, reply, attempt)
+            quota = quota_message(status, reply, wait)
+            if quota:
+                raise EmbeddingError(
+                    f"HTTP {status} from {method}: {quota}: {reply[:600].decode('utf-8', 'replace')}"
+                )
+            self._sleep(wait)
         raise EmbeddingError("unreachable")
 
     def embed_texts(self, texts: Sequence[str]) -> list[list[float]]:

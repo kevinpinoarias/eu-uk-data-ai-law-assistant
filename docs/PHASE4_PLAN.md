@@ -1,6 +1,8 @@
-# Phase 4 plan: the answer layer (draft for approval, 15 October 2026)
+# Phase 4 plan: the answer layer (15 October 2026)
 
-Nothing here is built. It follows the project's rules: plan first, test first for deterministic code, pre-register the experiments, tune on the 40 development questions and touch the 40 test questions once per decision.
+**Status (end of 15 October 2026).** Approved and built, except as noted: steps 1, 2, 3, 5 and 6 and the table lookup are built and tested; the five design decisions of section 5 were taken as recommended; the router is a model router with a rule router as the baseline; the baselines of 4.4 were run on the development half except "the whole corpus in the prompt" (it is about 1.2 million tokens and does not fit); the comparison of answer models (4.6) has not been run (the larger Gemini model allows 20 free requests a day, so it needs a paid key); LangGraph is wired in `answer/graph.py` as an optional extra and not yet installed here. Results: `EXPERIMENTS.md` (P4.1 to P4.4); explanation: `HOW_THE_ANSWER_LAYER_WORKS.md`.
+
+Original plan, kept as written. Nothing below was built when it was written. It follows the project's rules: plan first, test first for deterministic code, pre-register the experiments, tune on the 40 development questions and touch the 40 test questions once per decision.
 
 ## 1. The ideas, from scratch
 

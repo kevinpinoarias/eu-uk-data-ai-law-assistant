@@ -1,0 +1,112 @@
+"""
+Step 5 of the answer layer: ask the language model to write a short answer from numbered passages, and to
+support it with quotations that step 6 (verify.py) then checks in code.
+
+The model is told to use only the passages, to copy its quotations exactly, to say so when the passages
+do not answer the question, and not to give legal advice. It replies in JSON so the reply can be read
+without guessing. The labels that tell the reader which law, provision and text version an answer used
+are built by this module from the chunk's own fields, never by the model, so they cannot be wrong or
+missing.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+from datetime import date
+
+from law_assistant.answer.verify import Citation
+from law_assistant.chunk.chunker import Chunk
+from law_assistant.llm.gemini import LLMError
+
+LANGUAGE_NAMES = {"en": "English", "es": "Spanish"}
+
+ANSWER_INSTRUCTIONS = (
+    "You answer questions about EU, Spanish and UK data-protection and AI law for people who are not "
+    "lawyers. You are given numbered passages of the law. Rules:\n"
+    "1. Use only the passages. Do not add anything from memory, even if you know it.\n"
+    "2. If the passages do not contain enough to answer the question, set enough_evidence to false and "
+    "say briefly in the answer what is missing; do not guess.\n"
+    "3. Write in the language you are told, in plain words, in at most 150 words: the direct answer "
+    "first, then the conditions or exceptions that matter. Name the law and the provision in the text "
+    "(for example: GDPR Article 6(1)(f)). Passages from different laws or from different versions of the "
+    "same law (for example the EU GDPR and the UK GDPR, or the text as first published and the "
+    "consolidated text) must not be mixed up: say which one each statement comes from.\n"
+    "4. Support the answer with quotations. Each citation gives the passage number and a quotation "
+    "copied exactly from that passage, word for word, in the passage's own language (at most 40 words; "
+    "use ... to skip words). Every claim in the answer needs a citation behind it.\n"
+    "5. This is an explanation of what the text says, not legal advice: do not tell the user what to do "
+    "in their own situation.\n"
+    'Reply with JSON only: {"enough_evidence": true|false, "answer": "...", '
+    '"citations": [{"passage": 1, "quote": "..."}]}.'
+)
+
+
+def describe_version(version: str) -> str:
+    if version == "oj":
+        return "as first published in the Official Journal"
+    if version == "consolidated":
+        return "consolidated text"
+    if m := re.fullmatch(r"(consolidated|as-of|revised)-(\d{4})(\d{2})(\d{2})", version):
+        when = date(int(m.group(2)), int(m.group(3)), int(m.group(4)))
+        day = f"{when.day} {when.strftime('%B')} {when.year}"
+        return f"consolidated text of {day}" if m.group(1) == "consolidated" else f"text in force on {day}"
+    return version
+
+
+def source_label(chunk: Chunk) -> str:
+    law = chunk.context.split(" | ")[0]
+    return f"{law}, {chunk.citation} ({describe_version(chunk.version)})"
+
+
+def format_passages(chunks: Sequence[Chunk]) -> str:
+    return "\n\n".join(
+        f"[{i}] (text version: {describe_version(c.version)})\n{c.embed_text}"
+        for i, c in enumerate(chunks, start=1)
+    )
+
+
+@dataclass(frozen=True)
+class Draft:
+    enough_evidence: bool
+    text: str
+    citations: list[Citation] = field(default_factory=list)
+
+
+def parse_draft(reply: str) -> Draft:
+    cleaned = re.sub(r"^```(?:json)?|```$", "", reply.strip(), flags=re.MULTILINE).strip()
+    try:
+        data = json.loads(cleaned)
+        enough, text = data["enough_evidence"], data["answer"]
+        citations = [Citation(int(c["passage"]), str(c["quote"])) for c in data.get("citations") or []]
+    except (ValueError, KeyError, TypeError, AttributeError) as error:
+        raise LLMError(f"the answer is not the expected JSON: {reply[:200]!r}") from error
+    if not isinstance(enough, bool) or not isinstance(text, str):
+        raise LLMError("the answer's fields have the wrong types")
+    return Draft(enough, text.strip(), citations)
+
+
+class AnswerWriter:
+    def __init__(self, generator, *, max_output_tokens: int = 1200) -> None:
+        self._generator, self._max = generator, max_output_tokens
+
+    def write(
+        self, question: str, language: str, chunks: Sequence[Chunk], *, as_of: str | None = None
+    ) -> Draft:
+        when = f"the law as it stood on {as_of}" if as_of else "the current law"
+        prompt = (
+            f"Answer in: {LANGUAGE_NAMES[language]}\n"
+            f"The question is about: {when}\n"
+            f"Question: {question}\n\n"
+            f"Passages:\n{format_passages(chunks)}"
+        )
+        reply = self._generator.generate(
+            prompt,
+            system=ANSWER_INSTRUCTIONS,
+            temperature=0.0,
+            max_output_tokens=self._max,
+            json_output=True,
+        )
+        return parse_draft(reply)

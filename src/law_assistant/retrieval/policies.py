@@ -46,6 +46,16 @@ def original_text_only(chunks: Sequence[Chunk]) -> list[Chunk]:
     return [c for c in chunks if not (c.instrument in both and c.version != ORIGINAL)]
 
 
+AMENDMENT = "eu-ai-omnibus"  # the 2026 amending regulation: it did not exist before its own date
+
+
+def before_amendment_text(chunks: Sequence[Chunk]) -> list[Chunk]:
+    """The text as it stood before the 2026 amendment: the first-published texts, without the amending
+    regulation itself. For a question dated before the amendment, so that its new dates are not offered as if
+    they applied then."""
+    return [c for c in original_text_only(chunks) if c.instrument != AMENDMENT]
+
+
 class AsOfRetriever:
     def __init__(
         self, questions: Sequence[GoldQuestion], *, early: Retriever, late: Retriever, cutoff: str

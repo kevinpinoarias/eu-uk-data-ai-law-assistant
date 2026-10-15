@@ -107,6 +107,23 @@ The rule behind everything: **never trust a stage because it looks right; test i
 - English questions gained far more (0.51 to 0.79) than Spanish ones (0.55 to 0.59).
 **What it costs and what is still open.** In the final assistant this is one extra language-model call per question, whose time and price we have not measured. The 31 rewrites come from a strong model that knows a lot of law, so part of the gain is that knowledge. The result is on the development half only: rewrites for the test half will be made once, with the same instructions, when we confirm the whole pipeline. Decision 83.
 
+## Phase 3, finished for now: can the rewrite step run inside the system? (R6.3 to R6.7)
+
+**The idea.** The 0.70 came from rewrites written by a strong writer in one batch. The finished assistant must rewrite every *new* question by itself, with a cheap model it can call. So the same idea was tried with Google's smallest models (Gemini 3.1 and 3.5 Flash-Lite), once with a plain instruction and once with an instruction that also asks for the legal terms the provision would contain.
+**What we found.** All four cheap rewriters raised recall@5 a little (0.56 to 0.64 against 0.53) but **none was detectable**: every lower bound is below zero (the best is -0.032). So the project does *not* claim the 0.70 for the system; it is an upper bound with a stronger writer. By my own rule I stopped tuning on the development half.
+**What got in the way, and what it taught.** The larger Flash model allows only 20 requests a day on the free tier, so it could not be tested. The reply to the blocked request said "retry in 9 hours 28 minutes", and my code obediently slept: the run looked frozen for 11 minutes. Both Gemini clients now stop at once and say so. The same thing may be what happened to the first embedding run. Lesson: read an error's full text, and design for limits you do not control.
+
+## Phase 4: the answer layer, built and measured on the development half
+
+**The idea.** Search finds passages; the answer layer turns them into a short, sourced answer, or an honest refusal. Its steps are explained from scratch in `HOW_THE_ANSWER_LAYER_WORKS.md`: read the question, route it (look up a figure, refuse, or search), write the answer from five numbered passages with exact quotations, **check every quotation in code**, and decline when nothing valid is left.
+**Why it was built this way.** A language model is fluent whether or not it is right, so everything that can be done by ordinary code is: rules for the language and the jurisdiction, a small hand-checked table for exact figures, a quotation check that makes a fabricated citation impossible to show, labels for the law and the version written from the data and not by the model, and fixed refusal messages.
+**What we found (40 development questions).**
+- Routing: the model router sent 40 of 40 questions the right way, the rule router 39 of 40; all 5 refusals were refused with the right reason; all 4 figure questions got the right table row; no ordinary question was refused.
+- Of the 31 ordinary questions, 25 were answered and 6 declined. The judged correctness was 0.68. Eight passages instead of five made no detectable difference (0.69).
+- **The surprise.** The same model answering from memory with no search scored 0.63. The difference (+0.05) is well inside the noise (interval -0.10 to +0.18). So this design does **not** make answers detectably more *correct*. What it adds is what the memory answer cannot give: quotations proven to exist, named provisions and text versions, refusals, and knowledge newer than the model's training (where search helped most: the date-dependent questions, 0.40 against 0.20). That is the claim the project makes, and no more.
+- **A person read the judge.** Of 12 verdicts I read, I agreed with 10; on the other two the judge was too generous. One of them showed a real flaw: asked about the law "as of the start of 2026", the system quoted the July 2026 amendment's dates as if they applied then.
+- **A repair, written and tested but not yet measured.** For questions dated before the amendment, the system now searches the text as first published, without the amending regulation, and for questions about the original wording it searches every version. The measurement is waiting for the free tier's daily allowance (500 requests) to renew.
+
 ## Why each major choice, in one place
 
 | Choice | Why | What showed it |
@@ -123,7 +140,11 @@ The rule behind everything: **never trust a stage because it looks right; test i
 | No hybrid keyword + embedding merge | The equal-weight merge let the weak keyword list drag down the strong one | 0.43 against 0.53; the plan forbade tuning until it won |
 | Keep all versions and do not collapse copies | Neither changed anything detectable | R8 and R10 with both searches |
 | No reranker | No gain for 32 to 49 times the time | R5: 0.52 against 0.53 |
-| A question-rewriting step | The gap between everyday and legal wording was the main failure | R6: 0.53 to 0.70 |
+| A question-rewriting step (tried, not adopted) | The gap between everyday and legal wording was the main failure | A strong writer: 0.53 to 0.70. Cheap in-pipeline models: +0.03 to +0.11, none detectable |
+| Check every quotation in code | A model's citations cannot be trusted; ordinary code can check them exactly | A fabricated or misplaced quotation cannot be shown; an answer with no valid quotation becomes a decline |
+| Exact figures from a table, not from prose | A model can misread or mis-copy a number | 4 of 4 development figure questions answered from the right row |
+| Refuse out-of-corpus and advice questions | Wrong or unsafe to answer; the corpus excludes regulators' guides | 5 of 5 development refusals right, no ordinary question refused |
+| Do not claim better accuracy than memory | The measurement does not show it | 0.68 against 0.63, interval -0.10 to +0.18 |
 
 ## What the process has taught us so far
 
@@ -137,7 +158,11 @@ The rule behind everything: **never trust a stage because it looks right; test i
 8. **A better tool in theory still has to win the measurement.** The reranker is standard practice and was a good bet; here it gave nothing and cost 32 times the time. We checked the obvious excuse (the cut) instead of assuming it.
 9. **The wording of the question mattered more than the machinery.** Rewriting the question moved recall@5 by 17 points; chunk sizes, version policies, duplicate collapsing, fusion and a reranker together moved it by nothing detectable.
 10. **Keep the person who knows the answers away from the test.** The rewrites came from an agent that saw only the questions, for the same reason the gold set was frozen first.
+11. **A cheap model may not do what an expensive one did.** The rewrite gain (+0.17) did not carry over to a small model that could run in the system; saying "upper bound" and not "result" is the difference between a claim and a hope.
+12. **The headline you hoped for may not be there.** Search did not make the answers detectably more correct than the model's memory. The honest write-up names what the design does add (checked quotations, versions, refusals) and does not claim the rest.
+13. **Read the judge.** An automated grader is a measurement tool with its own errors; reading a sample found two it passed that it should not have, and one of them exposed a real bug in how versions of the law are chosen.
+14. **Limits you do not control are part of the design.** A daily quota, an unexpected 9-hour wait, a model closed to new users: each cost time until the code failed fast and the plan allowed for it.
 
 ## Where we are now
 
-Phases 0 to 2 are complete and committed. Phase 3 has measured keyword search (recall@5 0.24), BGE-M3 (0.53), fusion (worse), chunking and index variants (nothing detectable), a reranker (nothing) and a question-rewriting step (0.70 on the development half). Still to do in Phase 3: perhaps a second embedding model, whether rewriting and filters (jurisdiction, language, date) combine, how many chunks to hand the answer model (R9), and one confirmation of the chosen pipeline on the test half. Then the answer layer, planned in `PHASE4_PLAN.md`.
+Phases 0 to 2 are complete. Phase 3 measured keyword search (recall@5 0.24), BGE-M3 (0.53), fusion (worse), chunking and index variants (nothing detectable), a reranker (nothing), and question rewriting (0.70 with a strong writer, not shown with a cheap in-system model). Phase 4's answer layer is built, tested (about 540 automated tests) and measured on the development half. Still to do: measure the version-aware repair; read the 40 test questions once for the final configuration (about 250 model calls, so a day's allowance of the free tier or a paid key); a second embedding model and filters if time allows; the optional LangGraph install; and Phase 5 (a small web page, packaging and deployment). The gold set still needs its second independent review before the final write-up.
