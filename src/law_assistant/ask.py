@@ -15,9 +15,14 @@ def main(argv: list[str]) -> int:
     flags = {a for a in argv if a.startswith("--")}
     words = [a for a in argv if not a.startswith("--")]
     if not words:
-        print('usage: python -m law_assistant.ask [--version-aware] "your question"', file=sys.stderr)
+        print(
+            'usage: python -m law_assistant.ask [--version-aware] [--with-dates] "your question"',
+            file=sys.stderr,
+        )
         return 2
-    pipeline, generator = build_pipeline(version_aware="--version-aware" in flags)
+    pipeline, generator = build_pipeline(
+        version_aware="--version-aware" in flags, include_dates="--with-dates" in flags
+    )
     result = pipeline.ask(" ".join(words))
     print(result.text)
     steps = ", ".join(f"{k} {v:.2f}s" for k, v in result.timings.items())

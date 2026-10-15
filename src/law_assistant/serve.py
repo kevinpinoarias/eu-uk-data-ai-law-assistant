@@ -7,7 +7,9 @@ A small web server for the demo page, using only the standard library: `python -
 
 `--demo` serves canned answers without loading any model or key, to check the page. `--port N` and `--host H`
 change the address (default 127.0.0.1:8000). Behind a proxy, set TRUST_PROXY=1 so the client address is read
-from X-Forwarded-For for the rate limit. Questions are logged (without addresses) to data/traces/traces.jsonl.
+from X-Forwarded-For for the rate limit. Questions are logged (without addresses) to
+data/traces/traces.jsonl and deleted after TRACE_RETENTION_DAYS days (default 30), because a question can
+contain personal data.
 """
 
 from __future__ import annotations
@@ -112,8 +114,13 @@ def main(argv: list[str]) -> int:
     else:
         from law_assistant.answer.factory import build_pipeline
 
-        pipeline, _ = build_pipeline(version_aware="--version-aware" in argv)
+        pipeline, _ = build_pipeline(
+            version_aware="--version-aware" in argv, include_dates="--with-dates" in argv
+        )
     trace = TraceLog(Path(settings.PROJECT_ROOT / "data" / "traces" / "traces.jsonl"))
+    removed = trace.prune(days=int(os.environ.get("TRACE_RETENTION_DAYS", "30")))
+    if removed:
+        print(f"deleted {removed} traces older than the retention period")
     service = AskService(pipeline, trace=trace, limiter=RateLimiter())
     handler = make_handler(service, trust_proxy=os.environ.get("TRUST_PROXY") == "1")
     with ThreadingHTTPServer((host, port), handler) as server:

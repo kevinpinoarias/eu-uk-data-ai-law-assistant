@@ -33,6 +33,8 @@ Billing would also unlock B's measurement (it doubles as the second embedding mo
 
 Every question costs model calls. The service limits **6 questions a minute per client** and **300 a day for everyone** (`RateLimiter`, both adjustable), refuses questions over 1,000 characters, and logs every question without the client's address to `data/traces/traces.jsonl` (the page says questions are logged). Still to do on the Google side: a **budget alert** on the billing project, and the key held only as a hosting secret (never in the image or the repository).
 
+The step-by-step plan, with privacy, cost, CI and failure handling, is in [PHASE5_PLAN.md](PHASE5_PLAN.md).
+
 ## Steps left (in order)
 
 1. Billing on the Gemini project, with a budget alert (yours).

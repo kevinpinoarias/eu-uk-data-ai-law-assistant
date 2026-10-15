@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "frozen": "2026-10-15",
-  "sha256": "7d9a62f5977c9f84c0fc2106c1cdfc976f2a383c570f2f9f8033ecb4f6ea288b",
+  "sha256": "8c91df9aa63d0c3adaa58d22a1637b2b59b678c830ae7ce4f553d42e526d1eed",
   "questions": 80,
   "seed": 20261015,
   "split": {
@@ -22,5 +22,9 @@
     "dev": 31,
     "test": 31
   },
-  "review": "Drafted by an AI assistant and checked by scripts against the parsed corpus (every unit, pinpoint and quote exists; no question copies its answer; figures agree with the facts table). Independently reviewed by five separate AI reviewer passes that saw only the question, the expected answer and the cited provision text (first draft: 15 questions fine, 53 with minor findings, 12 with major findings); each finding was verified against the corpus and fixed where it held before this freeze. NOT reviewed by a qualified lawyer, and the legal content has not been reviewed by a person."
+  "review": "Drafted by an AI assistant and checked by scripts against the parsed corpus (every unit, pinpoint and quote exists; no question copies its answer; figures agree with the facts table). Independently reviewed by five separate AI reviewer passes that saw only the question, the expected answer and the cited provision text (first draft: 15 questions fine, 53 with minor findings, 12 with major findings); each finding was verified against the corpus and fixed where it held before this freeze. NOT reviewed by a qualified lawyer, and the legal content has not been reviewed by a person. Version 2 (15 October 2026): a second round of five independent AI reviewer passes, each given 16 of the 80 questions with the question, the expected answer, the gold labels and the text of the cited provisions (not the drafting notes and not the chunks' date metadata), found 29 questions fine, 48 with minor findings and 3 flagged major (all three are 'since when' dates that come from the chunks' in_force_from metadata, which the packet omitted: not errors in the gold). Every finding was checked against the corpus; the corrections that held (10 questions and one table caveat) are recorded in each question's notes. See docs/GOLD_REVIEW_2.md.",
+  "previous": {
+    "version": 1,
+    "sha256": "7d9a62f5977c9f84c0fc2106c1cdfc976f2a383c570f2f9f8033ecb4f6ea288b"
+  }
 }

@@ -14,6 +14,7 @@ from collections.abc import Callable
 from typing import Any
 
 from law_assistant.answer.trace import TraceLog
+from law_assistant.llm.gemini import LLMError
 
 MAX_QUESTION_CHARS = 1000
 
@@ -65,6 +66,13 @@ class AskService:
             return 429, {"error": wait}
         try:
             result = self._pipeline.ask(question)
+        except LLMError as error:
+            self._record({"question": question, "kind": "error", "error": "LLMError"})
+            if "quota" in str(error):
+                return 503, {
+                    "error": "The assistant's model allowance is used up for now; please try again later."
+                }
+            return 500, {"error": "Something went wrong while answering. Please try again later."}
         except Exception as error:  # the details stay in the trace; the user sees a plain message
             self._record({"question": question, "kind": "error", "error": type(error).__name__})
             return 500, {"error": "Something went wrong while answering. Please try again later."}

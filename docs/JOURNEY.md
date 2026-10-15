@@ -133,6 +133,26 @@ The rule behind everything: **never trust a stage because it looks right; test i
 **What we found.** A question embeds in 0.12 s on an ordinary CPU, so the demo does not need a graphics card. Measuring it exposed a bug that only a server would hit: the search index rewrote its 51 MB vector file after every new question; serving now keeps new question vectors in memory only.
 **What is left.** Billing, building and measuring the container image, a hosting account (see `DEPLOYMENT.md`).
 
+## Does a vector database help? (R7)
+
+**The idea.** A "vector database" is a place to keep the numbers that stand for each chunk and find the closest ones to a question. The question is whether one is needed at our size.
+**What we found.** Five ways of finding the nearest vectors (the original Python loop, NumPy, FAISS exact, FAISS approximate, a SQLite database extension) return the same results, so the choice is about speed and convenience. On our 3,831 vectors the original loop took 113 ms, NumPy 0.7 ms and the others 0.2 to 7 ms; NumPy alone stays under 100 ms up to about half a million vectors. A "perfect-tie" subtlety taught us something: 3,831 chunks have only 3,300 distinct vectors (copies of one text), so equal scores can be listed in any order, which looked like a disagreement between methods and was not.
+**What changed.** The search now uses NumPy when it is installed. No library or database is added; the honest answer to "does a vector store beat scanning?" is "not at this size". The size at which that changes, and the things a database adds beyond speed (storing the vectors in a file, filtering by metadata), are in `EXPERIMENTS.md`.
+
+## A question about Spanish: why did rewriting help English more?
+
+**The idea.** In the rewriting experiment English recall@5 rose from 0.51 to 0.79 and Spanish from 0.55 to 0.59. Before concluding that Spanish is somehow harder, we looked for a reason with no model calls.
+**What we found.** I had guessed that Spanish questions need English-only UK law that a Spanish rewrite cannot match. It is the reverse: English questions need more of it (32 % against 12 %). Spanish questions did not start higher or get weaker rewrites either. On the required provisions, Spanish improves everywhere, only less, and with 14 questions the difference is within the noise. The one real language finding is that half the top five for a Spanish question are English copies of the same law until the rewrite pulls Spanish text up (50 % to 79 %).
+**The lesson.** A striking contrast between two small groups is often not a finding. We wrote down three explanations, tested them, and all three failed; the right conclusion was "probably no real gap", not a fourth story.
+
+## The second review of the gold set, and what it taught
+
+**The idea.** The test only means something if its questions and labels are right. A first round of five independent AI reviewers had fixed 12 serious problems before the set was frozen. A second round, on the corrected set, was promised before anyone reads the sealed test questions.
+**What it found.** Of 80 questions, 29 were fine, 48 had minor findings and 3 were flagged major. We checked every finding against the corpus before adopting any. The three "major" ones were not errors: they were "since when" dates that come from the chunks' date metadata, which the reviewers were not shown. A suspected parser bug turned out to be a 2018 corrigendum. About 25 label comments could not change any score, because a provision counts once if a chunk holds any of its pinpoint ids.
+**What changed.** Ten questions and one table caveat: two acceptable labels that rewarded a text of the wrong date were removed, one provision was promoted, and seven expected answers lost an unsupported or wrong sentence, a garbled Spanish phrase, a wrong term or a language mix. This is gold version 2; development recall@5 and MRR are identical, nDCG@10 moved 0.002.
+**The useful accident.** The "false alarms" pointed at a real hole in the system: the answer writer was never shown the in-force date, which is why two development questions were declined or judged incomplete. An option now shows it; it is measured with the version-aware search when the model's daily allowance allows (decision 98).
+**The lesson.** An independent reviewer can only judge what it is shown. When a reviewer says "the date is not in the text", either the gold is wrong or the evidence the system uses is not what the reviewer saw; here it was the second, and it improved the system. Details: `GOLD_REVIEW_2.md`.
+
 ## Why each major choice, in one place
 
 | Choice | Why | What showed it |

@@ -8,6 +8,13 @@ published", was searched in the current text only and answered wrongly.
 PRE-REGISTRATION (written 15 October 2026 after P4.4 was scored; this variant exists because of those
 development failures, so it is a tuned variant and only the test half can show whether it generalises)
 
+AMENDMENT (same day, before D was run): the second independent review of the gold set showed that the answers to
+three 'since when' questions (q049, q051 on the development half) need the date the wording took effect, which
+the chunks carry as `in_force_from` but the writer was never shown (in the first run q049 was declined and q051
+was judged 'partly' for lacking its date). D therefore also shows the writer each passage's 'in force from' date
+and a rule for using it. The two changes are tested together as D; they cannot be separated with five version
+questions and two date questions in the development half. Gold version 2 (the review's corrections) is used.
+
 Variant D (counted in the experiment tally), otherwise identical to A (k = 5): a question dated before the
 consolidated AI Act (27 July 2026) is searched in the text as first published WITHOUT the 2026 amending
 regulation; a question that asks about the wording as first published ("as first published", "Official Journal",
@@ -63,7 +70,7 @@ def main() -> int:
     embedder = BGEEmbedder.load(BGE_DIR, device=device, max_length=1024)
     parts = make_parts(chunks, by_id, embedder, generator, facts)
     judge = parts["judge"]
-    runs = {"A": build_pipeline(parts, 5), "D": build_pipeline(parts, 5, version_aware=True)}
+    runs = {"A": build_pipeline(parts, 5), "D": build_pipeline(parts, 5, version_aware=True, dates=True)}
     results = {}
     for name, pipe in runs.items():
         results[name] = {}

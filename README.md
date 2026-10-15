@@ -17,7 +17,7 @@ What makes the problem interesting:
 
 ## What has been measured so far
 
-All numbers are on the 31 retrieval questions (or 40 questions in all) of the **development** half of the frozen gold set, with 95 % intervals in the experiment log. The gold set was drafted by an AI assistant, checked by scripts and AI reviews, and is **not lawyer-reviewed**.
+All numbers are on the 31 retrieval questions (or 40 questions in all) of the **development** half of the frozen gold set, with 95 % intervals in the experiment log. The gold set (version 2, after two rounds of independent AI review, see [docs/GOLD_REVIEW_2.md](docs/GOLD_REVIEW_2.md)) was drafted by an AI assistant, checked by scripts and AI reviews, and is **not lawyer-reviewed**.
 
 | Question | Result |
 |---|---|
@@ -26,6 +26,7 @@ All numbers are on the 31 retrieval questions (or 40 questions in all) of the **
 | Does merging keyword and embedding search help? A reranker? Other chunk sizes, version policies, duplicate collapsing? | No detectable gain from any (the merge was worse); the reranker was 32 times slower for no gain |
 | Does the context line (law, chapter, article) in each chunk matter? | Yes: without it recall@5 falls from 0.53 to 0.37 |
 | Does rewriting the question in legal vocabulary help? | A strong writer: 0.53 to 0.70. Cheap in-system models: +0.03 to +0.11, not detectable, so not adopted |
+| Does a vector library or database beat a plain scan of the vectors? | No, at 3,831 chunks: identical results; NumPy takes 0.7 ms against 113 ms for the original loop, and a library only matters beyond a few hundred thousand chunks |
 | Does the answer layer route correctly? | 40 of 40 questions routed right, 5 of 5 refusals, 4 of 4 exact figures from the right table row |
 | Is the answer layer more *correct* than the same model answering from memory? | **Not detectably** (0.68 against 0.63). Its value is checked quotations, named sources and versions, and refusals, not a measured accuracy gain |
 
@@ -50,7 +51,7 @@ Regulator guidance, case law and adjacent laws come in later tiers. See [SOURCES
 | 2. Gold question set | 80 bilingual questions with the correct articles, a table of exact facts and the metrics, frozen before any experiment. Done (not lawyer-reviewed) |
 | 3. Retrieval experiments | Keyword, embeddings and hybrid; chunking; reranking; question rewriting. Pre-registered, judged by recall@k, MRR and nDCG with bootstrap intervals. Development half measured; a second embedding model and filters are open |
 | 4. Answer layer ([plan](docs/PHASE4_PLAN.md), [how it works](docs/HOW_THE_ANSWER_LAYER_WORKS.md)) | Understand, route, look up exact figures, retrieve, answer with quotations checked in code, or refuse or decline. Built and measured on the development half; version-aware search built, not yet measured; test half not yet read |
-| 5. Ship | Service layer with rate limit and traces, web page and server, Dockerfile: built (the image is not built yet). Deployment: not started ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)) |
+| 5. Ship | Service layer with rate limit and traces, web page and server, Dockerfile: built (the image is not built yet). Deployment: not started ([plan](docs/PHASE5_PLAN.md), [measurements](docs/DEPLOYMENT.md)) |
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for what is done, what is next and what is not planned.
 

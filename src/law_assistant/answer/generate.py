@@ -61,11 +61,34 @@ def source_label(chunk: Chunk) -> str:
     return f"{law}, {chunk.citation} ({describe_version(chunk.version)})"
 
 
-def format_passages(chunks: Sequence[Chunk]) -> str:
-    return "\n\n".join(
-        f"[{i}] (text version: {describe_version(c.version)})\n{c.embed_text}"
-        for i, c in enumerate(chunks, start=1)
-    )
+DATE_INSTRUCTIONS = (
+    "6. A passage header may say 'in force from <date>': the date the current wording of that provision "
+    "took effect, taken from the source's own dates. For a 'since when' question use it, and say that it is "
+    "the date this wording took effect; if the header has no such date, do not guess one.\n"
+)
+
+
+def answer_instructions(include_dates: bool = False) -> str:
+    """The standing rules; with `include_dates` the in-force-date rule is added before the reply format."""
+    if not include_dates:
+        return ANSWER_INSTRUCTIONS
+    head, tail = ANSWER_INSTRUCTIONS.split("Reply with JSON only", 1)
+    return head + DATE_INSTRUCTIONS + "Reply with JSON only" + tail
+
+
+def describe_date(iso: str) -> str:
+    when = date.fromisoformat(iso)
+    return f"{when.day} {when.strftime('%B')} {when.year}"
+
+
+def format_passages(chunks: Sequence[Chunk], *, include_dates: bool = False) -> str:
+    def header(c: Chunk) -> str:
+        text = f"text version: {describe_version(c.version)}"
+        if include_dates and c.in_force_from:
+            text += f"; in force from {describe_date(c.in_force_from)}"
+        return f"({text})"
+
+    return "\n\n".join(f"[{i}] {header(c)}\n{c.embed_text}" for i, c in enumerate(chunks, start=1))
 
 
 @dataclass(frozen=True)
@@ -89,8 +112,8 @@ def parse_draft(reply: str) -> Draft:
 
 
 class AnswerWriter:
-    def __init__(self, generator, *, max_output_tokens: int = 1200) -> None:
-        self._generator, self._max = generator, max_output_tokens
+    def __init__(self, generator, *, max_output_tokens: int = 1200, include_dates: bool = False) -> None:
+        self._generator, self._max, self._include_dates = generator, max_output_tokens, include_dates
 
     def write(
         self, question: str, language: str, chunks: Sequence[Chunk], *, as_of: str | None = None
@@ -100,11 +123,11 @@ class AnswerWriter:
             f"Answer in: {LANGUAGE_NAMES[language]}\n"
             f"The question is about: {when}\n"
             f"Question: {question}\n\n"
-            f"Passages:\n{format_passages(chunks)}"
+            f"Passages:\n{format_passages(chunks, include_dates=self._include_dates)}"
         )
         reply = self._generator.generate(
             prompt,
-            system=ANSWER_INSTRUCTIONS,
+            system=answer_instructions(self._include_dates),
             temperature=0.0,
             max_output_tokens=self._max,
             json_output=True,

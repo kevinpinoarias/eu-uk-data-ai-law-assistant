@@ -3,8 +3,9 @@ Build the real answer pipeline from what is on this machine: the parsed chunks, 
 saved vectors, the facts table, and the Gemini key in `.env`. Heavy imports (PyTorch, transformers) happen
 only here, so importing the rest of the package stays light.
 
-`version_aware` is off by default: the repair for questions dated before the 2026 amendment is built and
-tested but not yet measured (decision 90), so the shipped default is the configuration that was measured.
+`version_aware` and `include_dates` are off by default: the repairs for questions dated before the 2026
+amendment and for 'since when' questions are built and tested but not yet measured (decisions 90 and 98), so
+the shipped default is the configuration that was measured.
 """
 
 from __future__ import annotations
@@ -22,7 +23,9 @@ from law_assistant.retrieval.dense import DenseIndex
 from law_assistant.retrieval.policies import CollapsedRetriever, before_amendment_text, current_text_only
 
 
-def build_pipeline(*, k: int = 5, version_aware: bool = False, device: str | None = None):
+def build_pipeline(
+    *, k: int = 5, version_aware: bool = False, include_dates: bool = False, device: str | None = None
+):
     """Return (pipeline, generator); the generator is returned so callers can read tokens and timings."""
     import torch
 
@@ -48,7 +51,7 @@ def build_pipeline(*, k: int = 5, version_aware: bool = False, device: str | Non
         current=search(current_text_only(chunks), "bge-m3-current"),
         full=search(chunks, "bge-m3"),
         original=search(before_amendment_text(chunks), "bge-m3-original"),
-        writer=AnswerWriter(generator),
+        writer=AnswerWriter(generator, include_dates=include_dates),
         chunks=chunks,
         k=k,
         version_aware=version_aware,

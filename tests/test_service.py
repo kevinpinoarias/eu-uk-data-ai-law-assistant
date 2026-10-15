@@ -121,3 +121,43 @@ def test_a_failed_question_is_traced_too(tmp_path):
     svc.ask({"question": "q"}, client="c")
     row = json.loads((tmp_path / "t.jsonl").read_text(encoding="utf-8"))
     assert row["kind"] == "error" and row["error"] == "RuntimeError"
+
+
+def test_old_traces_are_deleted_and_recent_ones_kept(tmp_path):
+    from datetime import UTC, datetime, timedelta
+
+    path = tmp_path / "traces.jsonl"
+    now = datetime(2026, 10, 15, 12, 0, tzinfo=UTC)
+    rows = [
+        {"ts": (now - timedelta(days=40)).isoformat(), "question": "old"},
+        {"ts": (now - timedelta(days=29)).isoformat(), "question": "recent"},
+        {"ts": (now - timedelta(days=1)).isoformat(), "question": "new"},
+        {"question": "no timestamp"},
+    ]
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    removed = TraceLog(path).prune(days=30, now=now)
+    kept = [json.loads(line)["question"] for line in path.read_text(encoding="utf-8").splitlines()]
+    assert removed == 2 and kept == [
+        "recent",
+        "new",
+    ]  # a row with no timestamp cannot be aged, so it goes too
+
+
+def test_pruning_a_missing_file_does_nothing(tmp_path):
+    assert TraceLog(tmp_path / "none.jsonl").prune(days=30) == 0
+
+
+def test_a_used_up_model_allowance_is_a_503_with_a_plain_message_not_a_generic_500():
+    from law_assistant.llm.gemini import LLMError
+
+    quota = LLMError("HTTP 429 from generateContent: the quota is used up and resets in about 8.5 hours")
+    svc, _ = service(FakePipeline(error=quota))
+    status, body = svc.ask({"question": "q"}, client="c")
+    assert status == 503 and "allowance" in body["error"] and "8.5" not in body["error"]
+
+
+def test_any_other_model_error_stays_a_generic_500():
+    from law_assistant.llm.gemini import LLMError
+
+    svc, _ = service(FakePipeline(error=LLMError("HTTP 400: bad request")))
+    assert svc.ask({"question": "q"}, client="c")[0] == 500

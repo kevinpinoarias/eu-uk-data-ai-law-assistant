@@ -111,3 +111,36 @@ def test_without_a_date_the_prompt_says_the_current_text_is_wanted():
     g = FakeGenerator(json.dumps({"enough_evidence": True, "answer": "ok", "citations": []}))
     AnswerWriter(g).write("q", "en", [chunk("a", "t")], as_of=None)
     assert "current law" in g.calls[0][0] and "English" in g.calls[0][0]
+
+
+def test_a_passage_can_show_the_date_its_wording_took_effect_when_asked_to():
+    from dataclasses import replace
+
+    from law_assistant.answer.generate import describe_date
+
+    dated = replace(chunk("a", "Text."), in_force_from="2026-02-05")
+    assert describe_date("2026-02-05") == "5 February 2026"
+    assert "in force from 5 February 2026" in format_passages([dated], include_dates=True)
+    assert "in force from" not in format_passages([dated])  # off by default: the measured configuration
+    undated = chunk("b", "Text.")
+    assert "in force from" not in format_passages([undated], include_dates=True)
+
+
+def test_the_writer_passes_the_option_on_and_the_instructions_explain_the_date_header():
+    from dataclasses import replace
+
+    from law_assistant.answer.generate import DATE_INSTRUCTIONS, answer_instructions
+
+    reply = json.dumps({"enough_evidence": True, "answer": "ok", "citations": []})
+    g = FakeGenerator(reply)
+    dated = replace(chunk("a", "Text."), in_force_from="2026-02-05")
+    AnswerWriter(g, include_dates=True).write("Since when?", "en", [dated])
+    prompt, kwargs = g.calls[0]
+    assert "in force from 5 February 2026" in prompt
+    system = kwargs["system"]
+    assert system == answer_instructions(True) and DATE_INSTRUCTIONS in system
+    assert "since when" in DATE_INSTRUCTIONS.lower()
+    assert system.index("in force from") < system.index("Reply with JSON only")
+    plain = FakeGenerator(reply)
+    AnswerWriter(plain).write("Since when?", "en", [dated])
+    assert plain.calls[0][1]["system"] == ANSWER_INSTRUCTIONS

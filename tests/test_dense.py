@@ -296,3 +296,17 @@ def test_by_default_a_new_question_vector_is_saved_so_experiments_can_resume(tmp
     before = (tmp_path / "v.f32").stat().st_size
     index.search("erasure", 1)
     assert (tmp_path / "v.f32").stat().st_size > before
+
+
+def test_the_numpy_search_gives_the_same_ranking_as_the_plain_loop_including_ties(tmp_path):
+    pytest.importorskip("numpy")
+    many = [
+        chunk(f"c{i}", "same text" if i % 3 == 0 else f"other {i % 4} erasure", context="") for i in range(12)
+    ]
+    plain = DenseIndex(many, FakeEmbedder(), tmp_path / "v", use_numpy=False)
+    fast = DenseIndex(many, FakeEmbedder(), tmp_path / "v", use_numpy=True)
+    for query in ("erasure", "breach", "same"):
+        assert fast.search(query, 12) == plain.search(query, 12)
+        assert [round(s, 5) for _, s in fast.scored(query, 5)] == [
+            round(s, 5) for _, s in plain.scored(query, 5)
+        ]

@@ -86,10 +86,10 @@ def collapsed(index, by_id):
     return CollapsedRetriever(index, by_id, by="copies", depth=50)
 
 
-def build_pipeline(parts, k, rewriter=None, version_aware=False):
+def build_pipeline(parts, k, rewriter=None, version_aware=False, dates=False):
     return AnswerPipeline(
         router=parts["router"], picker=parts["picker"], current=parts["current"], full=parts["full"],
-        original=parts["original"], writer=parts["writer"], chunks=parts["chunks"], k=k,
+        original=parts["original"], writer=parts["writer_dates" if dates else "writer"], chunks=parts["chunks"], k=k,
         rewriter=rewriter, version_aware=version_aware,
     )  # fmt: skip
 
@@ -113,6 +113,7 @@ def make_parts(chunks, by_id, embedder, generator, facts):
         "full": collapsed(index(chunks, "bge-m3"), by_id),
         "original": collapsed(index(before_amendment_text(chunks), "bge-m3-original"), by_id),
         "writer": AnswerWriter(cached("answers")),
+        "writer_dates": AnswerWriter(cached("answers"), include_dates=True),
         "chunks": chunks,
         "judge": Judge(cached("judge")),
         "memory": cached("memory"),

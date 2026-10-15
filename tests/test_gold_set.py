@@ -69,7 +69,8 @@ def test_the_set_is_frozen_and_matches_its_manifest(questions, manifest):
 
 
 def test_the_manifest_says_what_was_reviewed_and_what_was_not(manifest):
-    assert manifest["version"] == 1 and manifest["frozen"] == "2026-10-15" and len(manifest["sha256"]) == 64
+    assert manifest["version"] == 2 and manifest["frozen"] == "2026-10-15" and len(manifest["sha256"]) == 64
+    assert manifest["previous"]["version"] == 1 and len(manifest["previous"]["sha256"]) == 64
     assert "NOT reviewed by a qualified lawyer" in manifest["review"]
 
 

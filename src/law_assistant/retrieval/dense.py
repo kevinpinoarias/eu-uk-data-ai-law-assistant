@@ -42,6 +42,7 @@ class DenseIndex:
         document_prompt_fn: Callable[..., str] = document_prompt,
         query_prompt_fn: Callable[[str], str] = query_prompt,
         persist_queries: bool = True,
+        use_numpy: bool | None = None,
     ) -> None:
         self.name = name or f"{embedder.name}-{dimensions or 'full'}"
         self._embedder, self._store_path, self._dimensions = embedder, store_path, dimensions
@@ -58,6 +59,22 @@ class DenseIndex:
                 self._store.add(key, vector)
             self._store.save(store_path)
         self._vectors = [self._unit(self._store.get(k)) for k in keys]
+        self._matrix = None
+        if (
+            use_numpy is not False
+        ):  # None: use NumPy when it is installed (R7: 170 times faster, same results)
+            try:
+                import numpy as np
+
+                self._np = np
+                self._matrix = np.asarray(self._vectors, dtype=np.float32)
+                # Ties (identical vectors are common: copies of one text) are broken by chunk id, as before.
+                order = sorted(range(len(self._ids)), key=lambda i: self._ids[i])
+                self._tie_rank = np.empty(len(order), dtype=np.int64)
+                self._tie_rank[order] = np.arange(len(order))
+            except ImportError:
+                if use_numpy:
+                    raise
 
     def _unit(self, vector: list[float]) -> list[float]:
         return truncate(vector, self._dimensions) if self._dimensions else normalise(vector)
@@ -73,6 +90,11 @@ class DenseIndex:
 
     def scored(self, query: str, k: int) -> list[tuple[str, float]]:
         q = self._query_vector(query)
+        if self._matrix is not None:
+            np = self._np
+            values = self._matrix @ np.asarray(q, dtype=np.float32)
+            top = np.lexsort((self._tie_rank, -values))[:k]
+            return [(self._ids[i], float(values[i])) for i in top]
         scores = [
             (chunk_id, sum(map(mul, q, v))) for chunk_id, v in zip(self._ids, self._vectors, strict=True)
         ]

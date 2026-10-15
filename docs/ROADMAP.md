@@ -14,10 +14,10 @@ What is done, what comes next and what is deliberately not planned. Dates are 20
 
 ## Next, in this order
 
-1. **Measure version-aware search** (text as first published for questions dated before the 2026 amendment). Built and unit-tested; the measurement needs one day's allowance of the model's free tier.
+1. **Measure version-aware search and in-force dates** (text as first published for questions dated before the 2026 amendment; each passage's 'in force from' date shown to the writer). Built and unit-tested; the measurement needs one day's allowance of the model's free tier, and the answer-layer results must be re-run under gold version 2.
 2. **Read the 40 test questions once**, for the chosen configuration, against the baselines. About 250 model calls. Whatever comes out is reported, including a failure.
-3. **A second independent review of the gold set** by several AI reviewers (and, if a lawyer is willing, a human), before the final write-up. Any change makes a new version of the gold set.
-4. **Phase 5, shipping.** Built: a service layer with a rate limit and a trace of every question, a web server and a one-page interface (checked in a browser), a command-line question, and a Dockerfile (not yet built). Left: billing and a budget alert, building and measuring the image, a hosting account, and a deployment workflow. See [DEPLOYMENT.md](DEPLOYMENT.md).
+3. **A lawyer's review of the gold set**, if one is willing. The second round of AI review is done (version 2, `GOLD_REVIEW_2.md`).
+4. **Phase 5, shipping.** Built: a service layer with a rate limit and a trace of every question, a web server and a one-page interface (checked in a browser), a command-line question, and a Dockerfile (not yet built). Left: billing and a budget alert, building and measuring the image, a hosting account, and a deployment workflow. The full plan, step by step, is in [PHASE5_PLAN.md](PHASE5_PLAN.md); measurements and the open choice of embedding source are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## If time allows
 

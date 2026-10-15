@@ -622,3 +622,104 @@ Recall@5 by jurisdiction group (R4.1, F1, F2, F3, F4; number of questions):
 **What it says.** The filter that uses the gold labels (an upper bound for any jurisdiction filter) did no better in recall@5 than the one that reads the question, and neither moved it at all: the filters change the top five for 9 of 31 questions but not how many required provisions are in it. So the required provisions are not being crowded out by text from the wrong jurisdiction; what is missing is ranked below the right jurisdiction's own text. The language filter alone lowered MRR (0.46 to 0.40), perhaps because the other-language copy of a provision was sometimes the better-ranked one. F4's +0.032 has an interval that starts at exactly 0.000, so it is not shown. This matches the pattern since BGE-M3 arrived: tidying what the search is allowed to return changes little; the gains came from the question's wording (R6 rewriting) and from the context line in each chunk.
 
 The stated expectations: "F1 raises recall@5 by a few points" did not hold (0.000); "F2 gets part of it" is moot; "F3 changes little" held for recall@5 and not for MRR; "no filter has a lower paired bound above 0" held. A reminder that the jurisdiction groups are small (UK 2 questions, EU+UK 4).
+
+
+## R7 vector search backends, run 2026-10-15 (commit b1e34db; gold fingerprint 7d9a62f5)
+
+### R7 vector search backends (3,831 vectors of 1024 numbers)
+
+**Part A: accuracy on the development questions** (overlap of the top 10 with the plain loop; identical order; recall@5; MRR)
+
+| Backend | overlap@10 | identical order | recall@5 | MRR |
+|---|---|---|---|---|
+| python | 1.000 | 31/31 | 0.532 | 0.462 |
+| numpy | 0.987 | 26/31 | 0.532 | 0.462 |
+| faiss-flat | 0.987 | 7/31 | 0.532 | 0.462 |
+| faiss-hnsw | 0.971 | 6/31 | 0.524 | 0.456 |
+| sqlite-vec | 0.997 | 27/31 | 0.532 | 0.462 |
+
+**Part B: speed on the real vectors** (milliseconds)
+
+| Backend | build | search median | search 95th percentile |
+|---|---|---|---|
+| python | 49 | 113.03 | 117.09 |
+| numpy | 117 | 0.68 | 0.99 |
+| faiss-flat | 121 | 0.94 | 1.48 |
+| faiss-hnsw | 664 | 0.21 | 0.39 |
+| sqlite-vec | 295 | 7.29 | 8.59 |
+
+**Part C: speed as the set grows** (synthetic random vectors; median milliseconds per search; build in seconds)
+
+| Backend | 3,831 vectors | 38,310 vectors | 153,240 vectors |
+|---|---|---|---|
+| python | 118.58 (build 0.0 s) | 1235.61 (build 1.5 s) | not run |
+| numpy | 0.68 (build 0.1 s) | 7.46 (build 1.4 s) | 30.26 (build 0.0 s) |
+| faiss-flat | 1.02 (build 0.1 s) | 21.51 (build 1.3 s) | 77.53 (build 0.2 s) |
+| faiss-hnsw | 0.81 (build 1.6 s) | 1.43 (build 18.7 s) | 1.78 (build 85.2 s) |
+| sqlite-vec | 7.14 (build 0.3 s) | 63.59 (build 2.6 s) | not run |
+
+Approximate index overlap@10 with the exact one on random vectors (information only): 3,831: 0.60, 38,310: 0.40, 153,240: 0.10
+
+On disk, the sqlite-vec database for the real vectors is 17 MB; the raw float32 vectors are 16 MB.
+
+## Reading R7, vector search backends (15 October 2026)
+
+**Result.** Search results are the same whatever backend scans the vectors; what changes is speed. On the real 3,831 vectors: the plain Python loop 113 ms per search, NumPy 0.68 ms, FAISS exact 0.94 ms, FAISS approximate (HNSW) 0.21 ms, sqlite-vec 7.3 ms. recall@5 0.532 and MRR 0.462 for every exact backend; the approximate index gives 0.524 and 0.456 and overlaps the exact top 10 on 0.971.
+
+**The pre-registered rule was not met to the letter, and why.** I required an identical top 10 from exact backends. NumPy and FAISS exact overlapped the loop on 0.987 of the top-10 places and had a different order on several questions. Every difference is a perfect tie: 3,831 chunks have only 3,300 distinct vectors (copies of one text, such as the same article in two versions), so equal scores can be listed in any order, and the loop breaks ties by chunk id where the libraries do not. After giving the NumPy scan the same tie rule, 30 of 31 development questions have an identical top-10 order and the other differs by a float32 rounding (a score gap of 8e-8); recall@5, MRR and nDCG@10 are identical to three decimals (0.532, 0.462, 0.478). I read the rule by its intent (same answers) and adopt NumPy; the rule's wording was too strict about ties.
+
+**Scaling (synthetic vectors, ms per search).** 3,831 / 38,310 / 153,240 vectors: python 119 / 1,236 / not run; NumPy 0.7 / 7.5 / 30; FAISS exact 1.0 / 21.5 / 78; FAISS HNSW 0.8 / 1.4 / 1.8 (build 85 s at 153k); sqlite-vec 7 / 64 / not run. So a plain NumPy scan stays under a 100 ms budget up to about 500,000 vectors and under a second to about 5 million; the approximate index only pays off beyond that, and its build time and its loss of exactness are the price. The overlap figures for HNSW on random vectors (0.60, 0.40, 0.10) are not meaningful: random vectors have no neighbourhood structure for a graph index to use. FAISS exact was slower than NumPy's matrix product here (a single-query workload on a CPU).
+
+**What each would buy beyond speed.** sqlite-vec keeps the vectors in a database file (17 MB against 16 MB raw), so it brings persistence and SQL filtering (for example jurisdiction or version as ordinary columns) at 10 times NumPy's search time, which at 7 ms is still negligible next to the 0.12 s needed to embed the question and the seconds the language model takes. FAISS buys nothing at this size.
+
+**Decision 96.** The default scan in `DenseIndex` is NumPy when it is installed (else the plain loop), with ties broken by chunk id; no vector database or FAISS is adopted. At 3,831 chunks the answer to "does a vector store beat scanning?" is no: it changes nothing a user sees. The size at which it would start to matter is a few hundred thousand chunks, or the need to filter by metadata inside the store.
+
+
+## Diagnostic: Spanish against English questions, run 2026-10-15 (commit b1e34db; gold fingerprint 8c91df9a)
+
+### Why rewriting helped English more than Spanish (31 development retrieval questions)
+
+Share of required (primary) provisions within the top 5 / 10 / 30, and median best rank:
+
+- en, question: 28 provisions; top 5 43%, top 10 57%, top 30 64%; median best rank 7.5
+- en, question+rewrite: 28 provisions; top 5 61%, top 10 68%, top 30 86%; median best rank 3.5
+- es, question: 26 provisions; top 5 46%, top 10 50%, top 30 65%; median best rank 10.0
+- es, question+rewrite: 26 provisions; top 5 50%, top 10 62%, top 30 77%; median best rank 5.5
+
+Language of the top-5 chunks (share in the question's own language / in the other language):
+
+- en, question: 85% / 15% over 17 questions
+- en, question+rewrite: 88% / 12% over 17 questions
+- es, question: 50% / 50% over 14 questions
+- es, question+rewrite: 79% / 21% over 14 questions
+
+Does the question need law that exists only in the other language? (primary gold provisions by instrument):
+
+- en questions: 28 primary provisions; UK law (English only) 9 (32%); LOPDGDD (Spanish only) 2 (7%); EU law (both languages) 17
+- es questions: 26 primary provisions; UK law (English only) 3 (12%); LOPDGDD (Spanish only) 3 (12%); EU law (both languages) 20
+
+Rewrite length in words (mean) against question length:
+
+- en: question 19.2, rewrite 29.1
+- es: question 20.4, rewrite 31.4
+
+Spanish questions with a required provision still outside the top 5 after rewriting (id, best ranks):
+
+- q019: before [('eu-ai-act 3', 41)]; after [('eu-ai-act 3', 145)]
+- q023: before [('eu-gdpr 15', 1), ('eu-gdpr 12', 82)]; after [('eu-gdpr 15', 1), ('eu-gdpr 12', 48)]
+- q043: before [('es-lopdgdd 73', 53), ('es-lopdgdd 74', 90)]; after [('es-lopdgdd 73', 4), ('es-lopdgdd 74', 44)]
+- q047: before [('eu-ai-act 75', 12), ('eu-ai-act 75a', 44), ('eu-ai-act 75c', 813)]; after [('eu-ai-act 75', 6), ('eu-ai-act 75a', 21), ('eu-ai-act 75c', 640)]
+- q049: before [('uk-gdpr 6', 19)]; after [('uk-gdpr 6', 21)]
+- q070: before [('eu-gdpr 4', 11), ('eu-gdpr 7', 3), ('eu-gdpr 43', 1), ('eu-gdpr 42', 2)]; after [('eu-gdpr 4', 6), ('eu-gdpr 7', 1), ('eu-gdpr 43', 4), ('eu-gdpr 42', 3)]
+- q072: before [('eu-ai-act 70', 78), ('eu-ai-act 64', 450), ('eu-ai-act 75', 17), ('eu-ai-act 88', 50)]; after [('eu-ai-act 70', 45), ('eu-ai-act 64', 64), ('eu-ai-act 75', 17), ('eu-ai-act 88', 30)]
+- q073: before [('uk-dpa-2018 164A', 5), ('eu-gdpr 77', 9)]; after [('uk-dpa-2018 164A', 3), ('eu-gdpr 77', 10)]
+
+## Reading the Spanish diagnostic (15 October 2026)
+
+**The stated expectation was wrong, and none of the three explanations holds up.** I expected the gap in how much rewriting helped (English 0.51 to 0.79, Spanish 0.55 to 0.59 in recall@5) to come from Spanish questions needing law that exists only in English, so that a Spanish rewrite cannot match it. The opposite is true: 32 % of the English questions' required provisions are UK law (English only) against 12 % of the Spanish questions'. The other two explanations fail too. (a) A ceiling: before rewriting, the two languages are alike (46 % of required Spanish provisions in the top 5 against 43 % of English ones; median best rank 10 against 7.5). (c) Weaker rewrites: they are equally longer than the questions (+9.9 words in English, +11.0 in Spanish).
+
+What the numbers do show, on 26 and 28 required provisions: with the rewrite appended, the share in the top 5 goes 43 to 61 % in English and 46 to 50 % in Spanish; in the top 30, 64 to 86 % and 65 to 77 %; median best rank 7.5 to 3.5 and 10 to 5.5. Spanish improves everywhere, just less. With samples this small (14 Spanish questions) the difference between the gains is within the noise, so the honest reading is: **there may be no real language gap in the effect of rewriting**, and the 0.79 against 0.59 recall@5 contrast reflects a few questions. Of the 14 Spanish questions, the ones still missing after rewriting are mostly multi-provision AI Act questions (q019, q047, q072) whose required provisions rank at 45 to 640, plus q049 (the UK recognised-legitimate-interest question, rank 21).
+
+**One real finding about language.** Before rewriting, only 50 % of the top-5 chunks for a Spanish question are in Spanish (85 % of English questions' top 5 are in English); the rest are English copies of the same laws. They count as hits (the gold does not insist on a language), but they use up places, and the answer writer then reads half its passages in the other language. The rewrite, which contains Spanish legal terms, moves that to 79 % Spanish. This is a design point for the answer layer, not a retrieval score: preferring the question's language among copies of a provision (the language filter F3 did that and did not help recall@5, but lowered MRR). It is recorded here and not acted on.
+
+**q019 got worse with the rewrite** (best rank 41 to 145): the general-purpose AI model question, where the rewrite named the definition's own words and pulled other text higher. One example in 31, not a pattern.
