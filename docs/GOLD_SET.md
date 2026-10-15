@@ -81,4 +81,4 @@ All 80 now pass the checks and match the plan exactly (16 lookups, 8 definitions
 
 ## Status
 
-Steps 2.0 (schema and checks), 2.1 (drafting) and 2.3 (the structured table, see `docs/FACTS.md`) are done: 80 of 80 questions written, checked against the corpus and the plan, and guarded by tests; the eight numeric questions have their facts and their expected answers agree with them. Pending Kevin's review (accept, change or drop each). Next: 2.4 the metrics module, 2.5 the split and freeze.
+Steps 2.0 (schema and checks), 2.1 (drafting), 2.3 (the structured table, `docs/FACTS.md`) and 2.4 (the metrics, `docs/METRICS.md`) are done: 80 of 80 questions written and checked, every gold provision reachable by a real chunk, and scoring and intervals tested. Pending Kevin's review (accept, change or drop each). Next: 2.5 the split and freeze (40 and 40, stratified by type and language, with a recorded seed; with 62 retrieval questions each half has about 31, which limits how small a difference can be detected).
