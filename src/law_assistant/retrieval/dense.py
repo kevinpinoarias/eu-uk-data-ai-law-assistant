@@ -7,7 +7,7 @@ vector, which at 3,831 chunks takes a fraction of a second even in plain Python.
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from operator import mul
 from pathlib import Path
 from typing import Protocol
@@ -39,17 +39,17 @@ class DenseIndex:
         with_context: bool = True,
         dimensions: int | None = None,
         name: str | None = None,
+        document_prompt_fn: Callable[..., str] = document_prompt,
+        query_prompt_fn: Callable[[str], str] = query_prompt,
     ) -> None:
         self.name = name or f"{embedder.name}-{dimensions or 'full'}"
         self._embedder, self._store_path, self._dimensions = embedder, store_path, dimensions
+        self._query_prompt = query_prompt_fn
         self._store = VectorStore.load(store_path)
         self._ids = [c.id for c in chunks]
-        keys = [cache_key(embedder.name, document_prompt(c, with_context=with_context)) for c in chunks]
-        missing = [
-            (k, document_prompt(c, with_context=with_context))
-            for k, c in zip(keys, chunks, strict=True)
-            if k not in self._store
-        ]
+        prompts = [document_prompt_fn(c, with_context=with_context) for c in chunks]
+        keys = [cache_key(embedder.name, p) for p in prompts]
+        missing = [(k, p) for k, p in zip(keys, prompts, strict=True) if k not in self._store]
         for start in range(0, len(missing), SAVE_EVERY):
             part = missing[start : start + SAVE_EVERY]
             for (key, _), vector in zip(part, embedder.embed_texts([p for _, p in part]), strict=True):
@@ -61,7 +61,7 @@ class DenseIndex:
         return truncate(vector, self._dimensions) if self._dimensions else normalise(vector)
 
     def _query_vector(self, query: str) -> list[float]:
-        prompt = query_prompt(query)
+        prompt = self._query_prompt(query)
         key = cache_key(self._embedder.name, prompt)
         if key not in self._store:
             self._store.add(key, self._embedder.embed_texts([prompt])[0])

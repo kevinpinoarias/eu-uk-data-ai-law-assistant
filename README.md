@@ -50,6 +50,16 @@ ruff check . && ruff format --check .
 
 Copy `.env.example` to `.env` and set `FETCHER_CONTACT` before running any fetcher: the source sites require an identifying User-Agent.
 
+**Optional: the open embedding model (BGE-M3).** Nothing above needs it: the tests, CI and the keyword search run without it. To run the embedding experiments on your own machine you need Python packages (PyTorch, transformers, numpy) and a 2.3 GB model download. For a graphics card:
+
+```bash
+python -m pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cu126
+python -m pip install -e ".[open-embeddings]"
+python -m law_assistant.retrieval.get_bge
+```
+
+Without a graphics card install the CPU build of PyTorch instead and expect slower embedding. The saved vectors are not in the repository and are rebuilt from the chunks.
+
 ## Disclaimer
 
 This project explains and cites public legal texts. It is not legal advice, it can be wrong or out of date, and it must not be used for decisions about real compliance. Check the official source.

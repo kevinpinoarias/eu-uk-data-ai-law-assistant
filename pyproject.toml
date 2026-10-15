@@ -15,6 +15,9 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
+# Optional: run the open embedding model (BGE-M3) on this machine. Not needed for the tests, CI or the
+# keyword search. PyTorch for a graphics card is installed from its own index, see README.
+open-embeddings = ["torch>=2.7", "transformers>=4.40", "numpy>=1.26"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

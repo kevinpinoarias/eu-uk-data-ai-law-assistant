@@ -4,8 +4,10 @@ more of the right law than either alone?
 
 PRE-REGISTRATION (written 15 October 2026, before any embedding result exists; see docs/PHASE3_PLAN.md)
 
-Needs the saved chunk vectors of an embedding model (R1.3, gemini-embedding-2 at 768 numbers, or a later model
-passed with --store). It refuses to run if any chunk lacks a saved vector, so it never starts a costly job.
+Needs the saved chunk vectors of an embedding model: --model bge (BGE-M3, 1,024 numbers, run locally; the
+model used for the first run, because the hosted model's free tier stalled) or --model gemini
+(gemini-embedding-2 at 768 numbers). It refuses to run if any chunk lacks a saved vector, so it never starts
+a costly job.
 
 Data: the 3,831 chunks and the 31 development retrieval questions of the frozen gold set. Test half untouched.
 
@@ -27,7 +29,7 @@ difference". It is not adopted for being merely "no worse".
 Stated expectation (can be wrong): R2.1 beats both singles in point estimate, most on questions that mix legal
 terms with lay wording; the gain over the better single is small enough that the interval may include 0.
 
-Run: python experiments/r2_fusion.py [--store data/indexes/gemini-embedding-2] [--log]
+Run: python experiments/r2_fusion.py --model bge|gemini [--log]
 """
 
 from __future__ import annotations
@@ -44,41 +46,53 @@ from law_assistant.evaluation.metrics import metric_values, paired_bootstrap, wr
 from law_assistant.retrieval.bm25 import BM25Index
 from law_assistant.retrieval.dense import DenseIndex, cache_key
 from law_assistant.retrieval.fusion import FusedRetriever
-from law_assistant.retrieval.gemini import GeminiEmbedder, document_prompt
+from law_assistant.retrieval.gemini import GeminiEmbedder
 from law_assistant.retrieval.report import format_table, summarise_with_ci
 from law_assistant.retrieval.runner import breakdown, evaluate, run_retriever, select
 from law_assistant.retrieval.vectors import VectorStore
 
 K = 10
-DIMENSIONS = 768
+MODEL = sys.argv[sys.argv.index("--model") + 1] if "--model" in sys.argv else "bge"
 RUNS = settings.PROJECT_ROOT / "data" / "runs"
 LOG = settings.PROJECT_ROOT / "docs" / "EXPERIMENTS.md"
 
 
 def main() -> int:
-    store_arg = sys.argv[sys.argv.index("--store") + 1] if "--store" in sys.argv else None
-    store_path = settings.PROJECT_ROOT / (store_arg or "data/indexes/gemini-embedding-2")
     chunks = [c for f in sorted(settings.CHUNKS_DIR.glob("*.jsonl")) for c in read_chunks(f)]
+    if MODEL == "gemini":
+        from law_assistant.retrieval.gemini import document_prompt, query_prompt
+
+        store_path = settings.PROJECT_ROOT / "data" / "indexes" / "gemini-embedding-2"
+        settings.load_env_file()
+        embedder, model_name, dimensions = GeminiEmbedder.from_env(), "gemini-embedding-2", 768
+    else:
+        from law_assistant.retrieval.bge import BGEEmbedder, document_prompt, query_prompt
+
+        store_path = settings.PROJECT_ROOT / "data" / "indexes" / "bge-m3"
+        embedder = BGEEmbedder.load(settings.PROJECT_ROOT / "data" / "models" / "bge-m3", device="cuda")
+        model_name, dimensions = "bge-m3", None
     store = VectorStore.load(store_path)
-    missing = sum(1 for c in chunks if cache_key("gemini-embedding-2", document_prompt(c)) not in store)
+    missing = sum(1 for c in chunks if cache_key(model_name, document_prompt(c)) not in store)
     if missing:
         print(
             f"{missing} of {len(chunks)} chunks have no saved vector in {store_path}; finish embedding first"
         )
         return 1
-    settings.load_env_file()
     questions = select(read_gold(settings.GOLD_DIR / "questions.jsonl"), "dev")
     manifest = read_manifest(settings.GOLD_DIR / "MANIFEST.json")
 
     bm25 = BM25Index(chunks, name="bm25-plain")
-    dense = DenseIndex(chunks, GeminiEmbedder.from_env(), store_path, dimensions=DIMENSIONS, name="embedding")
+    dense = DenseIndex(
+        chunks, embedder, store_path, dimensions=dimensions, name="embedding",
+        document_prompt_fn=document_prompt, query_prompt_fn=query_prompt,
+    )  # fmt: skip
     retrievers = {"B1 BM25 plain": bm25, "B2 embedding alone": dense}
     retrievers["R2.1 RRF equal weights"] = FusedRetriever([bm25, dense], name="rrf-equal")
     scores, results = {}, {}
 
     def run(label, retriever):
         out = run_retriever(retriever, questions, k=K)
-        write_run(RUNS / f"r2_{retriever.name}.jsonl", out)
+        write_run(RUNS / f"r2_{MODEL}_{retriever.name}.jsonl", out)
         scores[label] = evaluate(questions, out, chunks)
         results[label] = summarise_with_ci(scores[label])
 
@@ -94,7 +108,7 @@ def main() -> int:
         )
         note = ""
     out = [
-        f"### R2 hybrid retrieval on the development questions ({len(questions)} questions)",
+        f"### R2 hybrid retrieval ({MODEL}) on the development questions ({len(questions)} questions)",
         "",
         format_table(results),
         "",
@@ -125,7 +139,7 @@ def main() -> int:
         git = ["git", "rev-parse", "--short", "HEAD"]
         commit = subprocess.run(git, capture_output=True, text=True).stdout.strip()
         header = (
-            f"\n\n## R2 hybrid retrieval, run {date.today().isoformat()} "
+            f"\n\n## R2 hybrid retrieval with {MODEL}, run {date.today().isoformat()} "
             f"(commit {commit}; gold fingerprint {manifest['sha256'][:8]})\n\n"
         )
         LOG.write_text(LOG.read_text(encoding="utf-8") + header + report + "\n", encoding="utf-8")

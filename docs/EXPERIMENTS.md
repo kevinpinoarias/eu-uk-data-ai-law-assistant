@@ -99,3 +99,71 @@ Each variant against R3.1 on recall@5 (paired bootstrap), with the size of its i
 
 **Reading this result.** Nothing is adopted: no variant's paired interval has its lower end above 0 (the upper end of every interval is exactly 0.000, because no variant improves a single question's recall@5 on net). Against the stated expectations: "recall@5 changes little with chunk size" holds (cap 200 and 300 are 0.02 to 0.03 lower, cap 600 equal); "smaller chunks raise hit@5 on lookups" was wrong (hit@5 is 0.35 at caps 200 and 400 and 0.32 at 300); "leaving the context line out lowers recall@5 slightly" is the point estimate (0.22 against 0.24; hit@5 falls from 0.35 to 0.29) but is not detectable at this sample size. Cap 600 does not lose anything with BM25, but it would exceed the 512-token limit of multilingual-e5 and is not a free choice for R4. Provisional, to be repeated with embeddings: BM25's weak baseline (0.24) limits how much any chunking choice can show.
 
+
+
+## R4.1 BGE-M3, run 2026-10-15 (commit e7f7e20; gold fingerprint 7d9a62f5)
+
+### R4.1 BGE-M3 on the development questions (31 retrieval questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R1.1 BM25 plain | 0.24 (0.12 to 0.39) | 0.25 (0.13 to 0.40) | 0.22 (0.11 to 0.35) | 0.35 (0.19 to 0.52) | 0.30 (0.17 to 0.45) |
+| R4.1 BGE-M3 | 0.53 (0.37 to 0.69) | 0.46 (0.31 to 0.62) | 0.48 (0.34 to 0.62) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.78) |
+
+R4.1 against R1.1, recall@5: difference +0.288, 95 % interval +0.086 to +0.484; share of resamples in which BGE-M3 is not better 0.00.
+Chunks cut at 1024 tokens: 0 of 3831.
+
+Recall@5 by question type (R1.1 BM25, R4.1 BGE-M3; number of questions):
+
+- as_of: 0.20, 0.40 (n = 5)
+- comparison: 0.22, 0.35 (n = 5)
+- cross_reference: 0.20, 0.40 (n = 5)
+- definition: 0.38, 0.44 (n = 4)
+- lookup: 0.12, 0.75 (n = 8)
+- spanish_law: 0.50, 0.75 (n = 4)
+
+Recall@5 by question language (R1.1 BM25, R4.1 BGE-M3; number of questions):
+
+- en: 0.18, 0.51 (n = 17)
+- es: 0.32, 0.55 (n = 14)
+
+Recall@5 by shared words with its gold text (R1.1 BM25, R4.1 BGE-M3; number of questions):
+
+- shares few words: 0.22, 0.59 (n = 19)
+- shares many words: 0.28, 0.44 (n = 12)
+
+
+## R2 hybrid retrieval with bge, run 2026-10-15 (commit e7f7e20; gold fingerprint 7d9a62f5)
+
+### R2 hybrid retrieval (bge) on the development questions (31 questions)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| B1 BM25 plain | 0.24 (0.12 to 0.39) | 0.25 (0.13 to 0.40) | 0.22 (0.11 to 0.35) | 0.35 (0.19 to 0.52) | 0.30 (0.17 to 0.45) |
+| B2 embedding alone | 0.53 (0.37 to 0.69) | 0.46 (0.31 to 0.62) | 0.48 (0.34 to 0.62) | 0.61 (0.45 to 0.77) | 0.63 (0.47 to 0.78) |
+| R2.1 RRF equal weights | 0.43 (0.27 to 0.58) | 0.43 (0.28 to 0.58) | 0.45 (0.32 to 0.58) | 0.52 (0.32 to 0.68) | 0.61 (0.45 to 0.76) |
+
+Better single retriever on recall@5: B2 embedding alone. Fused variants against it (paired bootstrap):
+
+- R2.1 RRF equal weights: difference -0.105 (95 % interval -0.242 to +0.024); share of resamples in which it is not better 0.95
+- R2.2 not run (R2.1 does not improve on the better single retriever in point estimate)
+
+Recall@5 by question type (B1 BM25 plain, B2 embedding alone, R2.1 RRF equal weights; number of questions):
+
+- as_of: 0.20, 0.40, 0.20 (n = 5)
+- comparison: 0.22, 0.35, 0.20 (n = 5)
+- cross_reference: 0.20, 0.40, 0.50 (n = 5)
+- definition: 0.38, 0.44, 0.44 (n = 4)
+- lookup: 0.12, 0.75, 0.62 (n = 8)
+- spanish_law: 0.50, 0.75, 0.50 (n = 4)
+
+Recall@5 by question language (B1 BM25 plain, B2 embedding alone, R2.1 RRF equal weights; number of questions):
+
+- en: 0.18, 0.51, 0.44 (n = 17)
+- es: 0.32, 0.55, 0.41 (n = 14)
+
+## Reading R4.1 and R2 (15 October 2026)
+
+**R4.1, BGE-M3 against BM25.** Against the pre-registered rule: BGE-M3 improves recall@5 from 0.24 to 0.53 and the lower end of the paired interval (+0.086) is above 0, so it is better than BM25 and becomes the retriever the later experiments are measured against. Against the stated expectations: "beats BM25 with the lower bound above 0" held; "most on lay-worded questions" held (questions that share few words with their gold text go from 0.22 to 0.59, lookups from 0.12 to 0.75); "below 0.9" held. Cross-language questions (a question in one language whose gold text is in the other) have not been separated yet. Zero chunks were cut at 1,024 tokens. It is still only one model: R4 adopts a model after every candidate has run, and about half of the required provisions are still missing from the top five (recall@10 is 0.63).
+
+**R2, fusion with BM25.** Not adopted, and the stated expectation was wrong: merging BM25 into BGE-M3 lowers recall@5 from 0.53 to 0.43 (paired interval -0.242 to +0.024, so not detectably worse, but in no resample clearly better). The reason is the arithmetic of the method: reciprocal rank fusion gives both lists equal weight, and BM25's top results are mostly wrong (recall@5 0.24), so they push right answers down. By the pre-registered rule R2.2 (weighting the embedding list 2 to 1) is not run, because R2.1 does not improve on the better single retriever in point estimate. Fusion may pay off if the keyword side improves (for example after the query is rewritten, R6) or with a weaker embedding model; that is a hypothesis, not a result.

@@ -29,6 +29,7 @@ data/chunks/
 data/cache/
 # Built indexes and embeddings are rebuilt by script
 data/indexes/
+data/models/
 *.faiss
 *.npy
 
