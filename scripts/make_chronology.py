@@ -23,7 +23,7 @@ def main() -> int:
         "# Chronology: every commit, oldest first",
         "",
         "Generated from the git history by `scripts/make_chronology.py`; regenerate after a commit. It answers "
-        "\"what was done when\"; the reasoning is in `DECISIONS.md`, the story in `JOURNEY.md`, the results in "
+        '"what was done when"; the reasoning is in `DECISIONS.md`, the story in `JOURNEY.md`, the results in '
         "`EXPERIMENT_INDEX.md`. Nothing is pushed by the assistant: pushing is done by the project owner.",
         "",
         "| # | When | Commit | What |",

@@ -133,6 +133,12 @@ The rule behind everything: **never trust a stage because it looks right; test i
 **What we found.** A question embeds in 0.12 s on an ordinary CPU, so the demo does not need a graphics card. Measuring it exposed a bug that only a server would hit: the search index rewrote its 51 MB vector file after every new question; serving now keeps new question vectors in memory only.
 **What is left.** Billing, building and measuring the container image, a hosting account (see `DEPLOYMENT.md`).
 
+## The first read of the sealed test half (T1)
+
+**The idea.** All tuning used 40 development questions; the other 40 were kept sealed so that one final number could not be flattered by tuning. The retriever (BGE-M3, context line, no rewriting) was settled, so it was the first decision to earn its read. The plan, including the rule and the result I expected, was committed to git before the run, and the script refuses a second read.
+**What we found.** On 31 unseen questions BGE-M3 reached recall@5 0.55 against 0.19 for keyword search (paired +0.360, interval +0.204 to +0.527). The development numbers were 0.53 and 0.24, so there is no sign that the choices were fitted to the development questions. English questions are where keyword search collapses (0.02): the words of an English lay question and of the law barely overlap.
+**What it does not say.** Only the retriever was read. Rewriting, the answer layer and the date/version repairs are still unread on the test half; each gets one read, once the model's daily allowance allows.
+
 ## Does a vector database help? (R7)
 
 **The idea.** A "vector database" is a place to keep the numbers that stand for each chunk and find the closest ones to a question. The question is whether one is needed at our size.

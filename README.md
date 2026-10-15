@@ -19,13 +19,14 @@ What makes the problem interesting:
 
 ## What has been measured so far
 
-All numbers are on the 31 retrieval questions (or 40 questions in all) of the **development** half of the frozen gold set, with 95 % intervals in the experiment log. The gold set (version 2, after two rounds of independent AI review, see [docs/GOLD_REVIEW_2.md](docs/GOLD_REVIEW_2.md)) was drafted by an AI assistant, checked by scripts and AI reviews, and is **not lawyer-reviewed**.
+All numbers are on the 31 retrieval questions (or 40 questions in all) of the **development** half of the frozen gold set, with 95 % intervals in the experiment log, except where a row says it is the sealed test half (read once, for the retriever only). The gold set (version 2, after two rounds of independent AI review, see [docs/GOLD_REVIEW_2.md](docs/GOLD_REVIEW_2.md)) was drafted by an AI assistant, checked by scripts and AI reviews, and is **not lawyer-reviewed**.
 
 | Question | Result |
 |---|---|
 | How well does keyword search (BM25) find the right provision? | recall@5 0.24 |
 | An open embedding model (BGE-M3, run locally)? | recall@5 **0.53**, a detectable gain over keyword search |
 | Does merging keyword and embedding search help? A reranker? Other chunk sizes, version policies, duplicate collapsing? | No detectable gain from any (the merge was worse); the reranker was 32 times slower for no gain |
+| Does BGE-M3 still beat keyword search on questions never tuned on (the sealed test half, read once)? | **Yes: recall@5 0.55 against 0.19**, paired +0.360 (+0.204 to +0.527) |
 | Does the context line (law, chapter, article) in each chunk matter? | Yes: without it recall@5 falls from 0.53 to 0.37 |
 | Does rewriting the question in legal vocabulary help? | A strong writer: 0.53 to 0.70. Cheap in-system models: +0.03 to +0.11, not detectable, so not adopted |
 | Does a vector library or database beat a plain scan of the vectors? | No, at 3,831 chunks: identical results; NumPy takes 0.7 ms against 113 ms for the original loop, and a library only matters beyond a few hundred thousand chunks |

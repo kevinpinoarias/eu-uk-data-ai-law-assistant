@@ -45,7 +45,7 @@ Also in the repository: `eval/gold/` (the questions and the manifest with their 
 ## Conventions
 
 - **Pre-register before you run.** The docstring of an experiment script states the variants, data, metrics, decision rule and the expected result, before the first run. If a plan changes before anything is scored, the script gets a dated "AMENDMENT" note.
-- **Dev half for tuning, test half once.** The 40 test questions are read once, for the chosen configuration. Nothing in this repository has read them yet.
+- **Dev half for tuning, test half once.** The 40 test questions are read once, for the chosen configuration. So far the test half has been read once, for the retriever (experiment T1, `EXPERIMENT_INDEX.md`).
 - **Honest labels.** The gold set is drafted by an AI assistant, checked by scripts, reviewed by AI passes, and **not reviewed by a lawyer**. Variants designed after seeing development results are marked "tuned". Nothing here is legal advice.
 - **Versions.** The gold set has versions (now 2). A result belongs to the version it was run under; results from different versions are not compared.
 - **Decisions have five columns** (number, date, decision, evidence, alternatives) and no names.

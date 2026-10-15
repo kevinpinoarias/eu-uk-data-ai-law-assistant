@@ -17,7 +17,7 @@ dependencies = []
 dev = ["pytest>=8", "ruff>=0.6"]
 # Optional: run the open embedding model (BGE-M3) on this machine. Not needed for the tests, CI or the
 # keyword search. PyTorch for a graphics card is installed from its own index, see README.
-open-embeddings = ["torch>=2.7", "transformers>=4.40", "numpy>=1.26"]
+open-embeddings = ["torch>=2.7", "transformers>=4.40,<5.20", "numpy>=1.26"]  # transformers 5.20 needs a newer torch than 2.7.1
 # Optional: draw the answer pipeline as a LangGraph graph (src/law_assistant/answer/graph.py).
 agent = ["langgraph>=0.4"]
 # Optional: the vector search backends compared in experiment R7 (the shipped search needs only NumPy).
@@ -41,3 +41,4 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]  # long expected strings and docstrings are fine in tests
 "experiments/*" = ["E501"]  # pre-registrations and report lines are prose; wrapping them hurts reading
+"scripts/*" = ["E501"]  # small tools; prose lines are fine

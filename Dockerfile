@@ -13,8 +13,10 @@ WORKDIR /app
 # default one. The project is installed in editable mode so that its data paths resolve under /app.
 COPY pyproject.toml README.md LICENSE NOTICE ./
 COPY src ./src
+# The last command imports the libraries so that a version mismatch fails the build now, not at start-up.
 RUN pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu \
- && pip install -e ".[open-embeddings]"
+ && pip install -e ".[open-embeddings]" \
+ && python -c "from transformers import AutoModel, AutoTokenizer; import numpy"
 
 # The model weights (BAAI/bge-m3, MIT licence, 2.27 GB) are downloaded once at build time.
 RUN python -m law_assistant.retrieval.get_bge

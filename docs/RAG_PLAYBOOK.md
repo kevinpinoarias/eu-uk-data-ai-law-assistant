@@ -207,3 +207,14 @@ Stated expectation (can be wrong): ...
 10. Compare with the no-retrieval baseline and read a sample of the judge's work.
 11. Budget calls; cache answers; fail fast on quotas.
 12. Ship with limits, privacy and traces; read the sealed test half once, then publish.
+
+## 15. The sealed test half: how and when to read it
+
+**The idea.** The test half is only worth something if it is read once per decision, after the decision is made. Reading it to *choose* between variants turns it into a second development set.
+**What we did.** Retrieval was settled first (BGE-M3 plain), so its decision was confirmed on the test half alone, with the plan committed to git before the run and a guard in the script that refuses a second read. Result: recall@5 0.55 on unseen questions against 0.53 on development, so no overfitting to the development half.
+**Rules we hold to.** One read per decision; the configuration, the rule and the expectation are written and committed first; anything designed after seeing development results is labelled tuned and is tested on the test half, not trusted; whatever comes out is reported, including a failure.
+**Checklist.**
+- [ ] Decide the configuration on the development half only.
+- [ ] Commit the pre-registration before the run; add a guard against a second read.
+- [ ] Compare with the same baseline as on development.
+- [ ] Report it in the README next to the development number.

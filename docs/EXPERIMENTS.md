@@ -723,3 +723,39 @@ What the numbers do show, on 26 and 28 required provisions: with the rewrite app
 **One real finding about language.** Before rewriting, only 50 % of the top-5 chunks for a Spanish question are in Spanish (85 % of English questions' top 5 are in English); the rest are English copies of the same laws. They count as hits (the gold does not insist on a language), but they use up places, and the answer writer then reads half its passages in the other language. The rewrite, which contains Spanish legal terms, moves that to 79 % Spanish. This is a design point for the answer layer, not a retrieval score: preferring the question's language among copies of a provision (the language filter F3 did that and did not help recall@5, but lowered MRR). It is recorded here and not acted on.
 
 **q019 got worse with the rewrite** (best rank 41 to 145): the general-purpose AI model question, where the rewrite named the definition's own words and pulled other text higher. One example in 31, not a pattern.
+
+
+## T1 test-half confirmation of the retriever, run 2026-10-15 (commit cfc1984; gold version 2, fingerprint 8c91df9a)
+
+### T1 retrieval on the TEST half (31 retrieval questions, gold version 2)
+
+| Variant | recall@5 | mrr | ndcg@10 | hit@5 | recall@10 |
+|---|---|---|---|---|---|
+| R1.1 BM25 plain | 0.19 (0.06 to 0.33) | 0.19 (0.07 to 0.32) | 0.19 (0.09 to 0.31) | 0.23 (0.10 to 0.39) | 0.26 (0.12 to 0.41) |
+| R4.1 BGE-M3 | 0.55 (0.38 to 0.72) | 0.54 (0.38 to 0.69) | 0.50 (0.37 to 0.63) | 0.65 (0.48 to 0.81) | 0.68 (0.53 to 0.82) |
+
+BGE-M3 against BM25, recall@5: difference +0.360, 95 % interval +0.204 to +0.527; share of resamples in which BGE-M3 is not better 0.00. Confirmed by the pre-registered rule (lower bound above 0): yes.
+
+Recall@5 by question type (BM25, BGE-M3; number of questions):
+
+- as_of: 0.20, 0.47 (n = 5)
+- comparison: 0.07, 0.33 (n = 5)
+- cross_reference: 0.30, 0.40 (n = 5)
+- definition: 0.00, 0.25 (n = 4)
+- lookup: 0.12, 0.75 (n = 8)
+- spanish_law: 0.50, 1.00 (n = 4)
+
+Recall@5 by question language (BM25, BGE-M3; number of questions):
+
+- en: 0.02, 0.55 (n = 14)
+- es: 0.32, 0.55 (n = 17)
+
+## Reading T1, the first read of the test half (15 October 2026)
+
+**The retriever decision is confirmed on questions it was never tuned on.** On the 31 retrieval questions of the test half (gold version 2), BGE-M3 reaches recall@5 0.55 (0.38 to 0.72) against 0.19 (0.06 to 0.33) for BM25; the paired difference is +0.360 with an interval of +0.204 to +0.527, so the pre-registered rule (lower bound above 0) is met. MRR 0.54 against 0.19, nDCG@10 0.50 against 0.19, hit@5 0.65 against 0.23.
+
+**Against the stated expectation.** I expected BGE-M3 at about 0.40 to 0.55 and BM25 at 0.15 to 0.30, both lower than on the development half because I had looked at development failures; the figures (0.55 and 0.19) sit at the edge of those ranges and **do not show overfitting**: the development numbers were 0.53 and 0.24. This is what you would expect for a retriever that was barely tuned: the context line and the model choice were the only real decisions, and both were tested on development questions with large, detectable effects. The gain is larger than on the development half (+0.36 against +0.29); with intervals of this width the two are consistent.
+
+**What the breakdown shows (small groups).** English questions: BM25 0.02, BGE-M3 0.55 (n = 14): keyword search almost never finds the right provision for an English lay question, because the wording of the question and the law differ. Spanish: BM25 0.32, BGE-M3 0.55 (n = 17); Spanish keyword search does better, perhaps because the Spanish legal text shares more everyday words with a Spanish question, a hypothesis I have not tested. By type, BGE-M3 is best on lookups (0.75) and Spanish-law questions (1.00) and weakest on definitions (0.25) and comparisons (0.33), where the answer needs several provisions or a precise defined term.
+
+**What this does not confirm.** Only the retriever decision (decision 76) was read on the test half. The rewriting step, the answer layer, the version-aware search and the in-force dates have not been read on the test half; the test half has no rewrites. The test half is now used for retrieval once; any further read of it for retrieval must be a new decision with its own pre-registration.
