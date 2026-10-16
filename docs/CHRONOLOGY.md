@@ -42,6 +42,8 @@ Generated from the git history by `scripts/make_chronology.py`; regenerate after
 | 36 | 2026-10-16 12:03 | `03eedb6` | Add bilingual privacy notice, hourly trace pruning, accessibility checklist; log P4.5 (variant D not adopted) |
 | 37 | 2026-10-16 12:08 | `d45cf1b` | Fill the privacy notice with the owner's details; put the lawyer's review back on the list |
 | 38 | 2026-10-16 12:32 | `4d94b57` | Log P4.6: the answer layer on the sealed test half did not beat memory |
+| 39 | 2026-10-16 12:32 | `70075f9` | Regenerate the chronology |
+| 40 | 2026-10-16 13:49 | `ce80ad0` | Add deploy prep and routing-fix candidates: cold-start notice, data bundle, deploy workflow, batch C |
 
 ## What each commit said
 
@@ -597,3 +599,12 @@ interview questions, chronology; README and DEPLOYMENT notes updated.
 - routing did not generalise: refusals 2/5, figures 2/4 (case law, enforcement and adequacy questions not recognised; one wrong fine tier)
 - claim restated (decision 114); router and picker not changed on the test half (decision 115)
 - README, experiment index, journey, roadmap and glossary updated
+
+### 40. `ce80ad0` Add deploy prep and routing-fix candidates: cold-start notice, data bundle, deploy workflow, batch C
+
+- Page: after 4 s without an answer the status line says the assistant may be waking up (EN/ES); the footer carries each publisher's required credit line in both languages.
+- NOTICE carries the credit lines for EUR-Lex, legislation.gov.uk and the BOE (decision 119).
+- scripts/make_data_bundle.py packs the git-ignored chunks, BGE-M3 vectors and NOTICE for CI; manual keyless deploy workflow (not yet run).
+- Router V2, picker V2 and a GDPR fine-tier scope overlay as options; defaults unchanged (decision 116).
+- Batch C: 37 frozen unseen routing questions (decision 117); the C1 comparison is pre-registered and was stopped by the free model quota.
+- Docs: decisions 116-120 (ICO fee and EU representative findings, owner decision pending), JOURNEY, DEPLOYMENT (free-tier terms, hosting options, owner steps), README, EXPERIMENT_INDEX.
