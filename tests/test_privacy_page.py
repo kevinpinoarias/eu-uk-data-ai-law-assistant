@@ -1,7 +1,7 @@
 """
 Checks that the privacy notice (web/privacy.html) says what the code does: the retention period equals the one the
 log enforces, a real trace row holds only the fields the notice lists and never the client's address, both
-languages are present, the only placeholders left are the four the owner must fill in, and the colours reach
+languages are present, no owner placeholder is left in it, and the colours reach
 WCAG AA contrast.
 """
 
@@ -40,11 +40,25 @@ def test_the_retention_period_in_the_notice_is_the_one_the_log_enforces():
     assert f"{days} days" in (settings.PROJECT_ROOT / "web" / "index.html").read_text(encoding="utf-8")
 
 
-def test_the_only_placeholders_left_are_the_four_the_owner_must_fill_in():
-    found = set(re.findall(r"\[[A-Z ,]+\]", NOTICE))
-    assert found == set(PRIVACY_PLACEHOLDERS)
-    assert launch_blockers() == [p for p in PRIVACY_PLACEHOLDERS if p in NOTICE]
-    assert launch_blockers("Everything filled in.") == []
+def test_no_owner_placeholder_is_left_and_the_check_would_notice_one():
+    assert not re.search(r"\[[A-Z ,]+\]", NOTICE)
+    assert launch_blockers() == []
+    assert launch_blockers("Run by [OWNER NAME], hosted by [HOSTING PROVIDER].") == [
+        "[OWNER NAME]",
+        "[HOSTING PROVIDER]",
+    ]
+    assert set(PRIVACY_PLACEHOLDERS) == {
+        "[OWNER NAME]",
+        "[CITY, COUNTRY]",
+        "[CONTACT EMAIL]",
+        "[HOSTING PROVIDER]",
+    }
+
+
+def test_the_notice_names_the_owner_the_place_a_contact_address_and_the_uk_regulator():
+    for text in (section("en"), section("es")):
+        assert "Kevin Pino Arias" in text and "Glasgow" in text
+        assert "mailto:" in text and "ico.org.uk" in text
 
 
 # What the notice tells the reader is kept, in the code's field names. Anything else in a row is a change that

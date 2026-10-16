@@ -55,7 +55,7 @@ Regulator guidance, case law and adjacent laws come in later tiers. See [SOURCES
 | 2. Gold question set | 80 bilingual questions with the correct articles, a table of exact facts and the metrics, frozen before any experiment. Done (not lawyer-reviewed) |
 | 3. Retrieval experiments | Keyword, embeddings and hybrid; chunking; reranking; question rewriting. Pre-registered, judged by recall@k, MRR and nDCG with bootstrap intervals. Development half measured; a second embedding model and filters are open |
 | 4. Answer layer ([plan](docs/PHASE4_PLAN.md), [how it works](docs/HOW_THE_ANSWER_LAYER_WORKS.md)) | Understand, route, look up exact figures, retrieve, answer with quotations checked in code, or refuse or decline. Built and measured on the development half; version-aware search built, not yet measured; test half not yet read |
-| 5. Ship | Service layer with rate limit, traces and a degraded mode when the model is down; web page in English and Spanish with accessibility enforced by tests and a bilingual privacy notice tied to the code (owner details still to fill in); CI smoke test; container built and run. Deployment: not started ([plan](docs/PHASE5_PLAN.md), [measurements](docs/DEPLOYMENT.md)) |
+| 5. Ship | Service layer with rate limit, traces and a degraded mode when the model is down; web page in English and Spanish with accessibility enforced by tests and a bilingual privacy notice tied to the code; CI smoke test; container built and run. Deployment: not started ([plan](docs/PHASE5_PLAN.md), [measurements](docs/DEPLOYMENT.md)) |
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for what is done, what is next and what is not planned.
 
