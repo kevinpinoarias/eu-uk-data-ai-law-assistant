@@ -83,7 +83,7 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 ## 5.10 What "done" means for Phase 5
 
 1. The image builds, starts, and answers 20 different questions with the key supplied only as a hosting secret (not in the image or the repository).
-2. The test half has been read once and its numbers are in the README **before** the live link is, so the demo and the reported numbers are the same system.
+2. The test half has been read once and its numbers are in the README **before** the live link is, so the demo and the reported numbers are the same system. **Met on 16 October 2026** (P4.6): the numbers are negative and are in the README; any change to the router or the fine picker after this would make the deployed system differ from the measured one, so such a change must be labelled and measured on new questions before it is deployed.
 3. A budget alert exists and the daily cap is set from the measured cost.
 4. The privacy notice is on the page with the owner's details and the real host named (no start-up warning); traces are deleted after 30 days.
 5. The trace report shows median and 95th-percentile latency from real use.

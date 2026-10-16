@@ -58,7 +58,7 @@ question -> [1 understand] -> [2 route] --refuse--------------------------------
 
 **In this project.** Fixed, polite messages in the user's language: "outside the texts I hold" (another country's law, a regulator's guide) and "I can explain what the law says, but I can't judge your own situation, check your compliance or draft documents for you". Every answer ends with "this explains what the text says; it is not legal advice".
 **In general.** A system that always answers is unsafe in law. Declining is a feature, and it must be tested like one.
-**The basics applied.** 5 of 5 development refusals refused with the right reason, no retrieve question refused.
+**The basics applied.** 5 of 5 development refusals refused with the right reason, no retrieve question refused. **On the sealed test half this did not hold**: 2 of 5 refusals had the right reason, because the router's definition of out-of-scope never named case law, enforcement decisions or adequacy lists (the three misses ended as "not enough evidence", not as invented answers), and one Spanish question about work messages on holiday was refused as legal advice by mistake (experiment P4.6, decisions 114 and 115).
 
 ## Measuring it honestly
 

@@ -2,7 +2,7 @@
 
 A bilingual (English and Spanish) retrieval-augmented assistant for EU, Spanish and UK data-protection and AI law. It aims to answer questions with verified citations, say when it does not know, and measure every design choice instead of assuming it.
 
-> **Status: building (October 2026).** Fetching, parsing, chunking, the frozen 80-question gold set, the facts table, the metrics, the retrieval experiments and a first answer layer are built and measured on the development half. The 40 test questions have not been read yet; that confirmation is the next milestone. For a plain-words walk through every step and why it was taken, see [docs/JOURNEY.md](docs/JOURNEY.md); for the answer layer, [docs/HOW_THE_ANSWER_LAYER_WORKS.md](docs/HOW_THE_ANSWER_LAYER_WORKS.md). It is not legal advice.
+> **Status: building (October 2026).** Fetching, parsing, chunking, the frozen 80-question gold set, the facts table, the metrics, the retrieval experiments and a first answer layer are built and measured on the development half. The 40 test questions have each been read once: the retriever held (recall@5 0.55 against 0.19), but the answer layer did **not** beat the same model answering from memory (0.52 against 0.76 correct), mostly because it declines when it has no checked evidence, and its refusal and exact-figure routing did not hold up on unseen questions (2 of 5 and 2 of 4). The write-up reports this as it is. For a plain-words walk through every step and why it was taken, see [docs/JOURNEY.md](docs/JOURNEY.md); for the answer layer, [docs/HOW_THE_ANSWER_LAYER_WORKS.md](docs/HOW_THE_ANSWER_LAYER_WORKS.md). It is not legal advice.
 
 > **Where to start:** [docs/INDEX.md](docs/INDEX.md) is the map of every document and how to track the project; [docs/RAG_PLAYBOOK.md](docs/RAG_PLAYBOOK.md) is a step-by-step guide to building a RAG tool using this project as the worked example; [docs/EXPERIMENT_INDEX.md](docs/EXPERIMENT_INDEX.md) lists every experiment with its result and decision; [docs/GLOSSARY.md](docs/GLOSSARY.md) explains every term.
 
@@ -19,7 +19,7 @@ What makes the problem interesting:
 
 ## What has been measured so far
 
-All numbers are on the 31 retrieval questions (or 40 questions in all) of the **development** half of the frozen gold set, with 95 % intervals in the experiment log, except where a row says it is the sealed test half (read once, for the retriever only). The gold set (version 2, after two rounds of independent AI review, see [docs/GOLD_REVIEW_2.md](docs/GOLD_REVIEW_2.md)) was drafted by an AI assistant, checked by scripts and AI reviews, and is **not lawyer-reviewed**.
+All numbers are on the 31 retrieval questions (or 40 questions in all) of the **development** half of the frozen gold set, with 95 % intervals in the experiment log, except where a row says it is the sealed test half (read once for the retriever and once for the answer layer). The gold set (version 2, after two rounds of independent AI review, see [docs/GOLD_REVIEW_2.md](docs/GOLD_REVIEW_2.md)) was drafted by an AI assistant, checked by scripts and AI reviews, and is **not lawyer-reviewed**.
 
 | Question | Result |
 |---|---|
@@ -31,8 +31,9 @@ All numbers are on the 31 retrieval questions (or 40 questions in all) of the **
 | Does the context line (law, chapter, article) in each chunk matter? | Yes: without it recall@5 falls from 0.53 to 0.37 |
 | Does rewriting the question in legal vocabulary help? | A strong writer: 0.53 to 0.70. Cheap in-system models: +0.03 to +0.11, not detectable, so not adopted |
 | Does a vector library or database beat a plain scan of the vectors? | No, at 3,831 chunks: identical results; NumPy takes 0.7 ms against 113 ms for the original loop, and a library only matters beyond a few hundred thousand chunks |
-| Does the answer layer route correctly? | 40 of 40 questions routed right, 5 of 5 refusals, 4 of 4 exact figures from the right table row |
-| Is the answer layer more *correct* than the same model answering from memory? | **Not detectably** (0.68 against 0.63). Its value is checked quotations, named sources and versions, and refusals, not a measured accuracy gain |
+| Does the answer layer route correctly (development half)? | 40 of 40 questions routed right, 5 of 5 refusals, 4 of 4 exact figures from the right table row. **On the sealed test half this did not hold**: 2 of 5 refusals with the right reason (case law, an enforcement question and an adequacy list were not recognised as out of scope; none got an invented answer), 2 of 4 figures from the right row (one wrong fine tier) |
+| Is the answer layer more *correct* than the same model answering from memory? | Development half: not detectably (0.68 against 0.63). **Sealed test half: no, and detectably worse: 0.52 against 0.76**, paired -0.242 (-0.387 to -0.097). The gap is the 11 of 31 questions it declined or wrongly refused (a question with no answer scores zero); on the 20 it answered it scored 0.80, the same as memory on those 20 (exploratory split). Its value is checked quotations and named sources, and declining rather than inventing, not an accuracy gain |
+| Do version-aware search and in-force dates repair the as-of failures? | No: 0.68 against 0.68; four questions the judge had passed got worse, one improved, so the plain pipeline stays |
 
 Everything is pre-registered and logged in [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md), including the experiments that failed; the reasons behind each choice are in [docs/DECISIONS.md](docs/DECISIONS.md).
 
@@ -54,7 +55,7 @@ Regulator guidance, case law and adjacent laws come in later tiers. See [SOURCES
 | 1. Ingestion and chunking | Polite fetchers; chunks by legal structure with citation and as-of-date metadata. Done |
 | 2. Gold question set | 80 bilingual questions with the correct articles, a table of exact facts and the metrics, frozen before any experiment. Done (not lawyer-reviewed) |
 | 3. Retrieval experiments | Keyword, embeddings and hybrid; chunking; reranking; question rewriting. Pre-registered, judged by recall@k, MRR and nDCG with bootstrap intervals. Development half measured; a second embedding model and filters are open |
-| 4. Answer layer ([plan](docs/PHASE4_PLAN.md), [how it works](docs/HOW_THE_ANSWER_LAYER_WORKS.md)) | Understand, route, look up exact figures, retrieve, answer with quotations checked in code, or refuse or decline. Built and measured on the development half; version-aware search built, not yet measured; test half not yet read |
+| 4. Answer layer ([plan](docs/PHASE4_PLAN.md), [how it works](docs/HOW_THE_ANSWER_LAYER_WORKS.md)) | Understand, route, look up exact figures, retrieve, answer with quotations checked in code, or refuse or decline. Built and measured on both halves: it did not beat memory on accuracy on the test half (0.52 against 0.76), and its routing of refusals and figures needs work on unseen questions (decisions 114 and 115); version-aware search measured and not adopted |
 | 5. Ship | Service layer with rate limit, traces and a degraded mode when the model is down; web page in English and Spanish with accessibility enforced by tests and a bilingual privacy notice tied to the code; CI smoke test; container built and run. Deployment: not started ([plan](docs/PHASE5_PLAN.md), [measurements](docs/DEPLOYMENT.md)) |
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for what is done, what is next and what is not planned.

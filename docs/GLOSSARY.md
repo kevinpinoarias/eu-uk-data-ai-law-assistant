@@ -70,7 +70,7 @@ Alphabetical. Each entry says what the thing is, then how it shows up in this pr
 
 **RAG (retrieval-augmented generation).** First find relevant passages, then give only those to a language model and tell it to answer from them. (`RAG_PLAYBOOK.md`)
 
-**Refuse.** To decline because the question must not be answered: another country's law, a regulator's guide, or advice on the user's own situation. Compare *abstain*. 5 of 5 development refusals were right.
+**Refuse.** To decline because the question must not be answered: another country's law, a regulator's guide, or advice on the user's own situation. Compare *abstain*. 5 of 5 development refusals were right; on the sealed test half only 2 of 5 were (case law, an enforcement question and an adequacy list were not recognised; none got an invented answer).
 
 **Reranker.** A slower second-pass scorer that re-orders the first search's top candidates. Tried (bge-reranker-v2-m3): no gain, 32 times slower.
 
@@ -78,7 +78,7 @@ Alphabetical. Each entry says what the thing is, then how it shows up in this pr
 
 **Rewriting (query rewriting).** Restating an everyday question in the law's own words before searching. A strong writer lifted recall@5 from 0.53 to 0.70; cheap in-system models gave no detectable gain.
 
-**Router.** The step that decides what to do with a question: retrieve, look up an exact figure, or refuse. The model router got 40 of 40.
+**Router.** The step that decides what to do with a question: retrieve, look up an exact figure, or refuse. The model router got 40 of 40 on the development half and did worse on the sealed test half (3 of 5 refusals missed, 1 of 4 figures never reached the table).
 
 **Seed.** The starting number of a random process, fixed so a "random" choice (the split, the bootstrap) can be repeated exactly.
 

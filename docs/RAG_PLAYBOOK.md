@@ -132,7 +132,7 @@ Stated expectation (can be wrong): ...
 **The idea.** Everything that can be checked with ordinary code should be, because it is exact, free and cannot be talked round. Reserve the model for writing.
 **What we built, in order.**
 1. **Understand** the question with rules (language 40/40, jurisdictions 35/40).
-2. **Route** it: retrieve, look up an exact figure, or refuse (model router 40/40; rules 39/40).
+2. **Route** it: retrieve, look up an exact figure, or refuse (model router 40/40 and rules 39/40 on the questions it was written beside; on the sealed test half it missed 3 of 5 refusals and one fine tier. Lesson: list the *kinds* of out-of-scope question in the instructions and test them on questions written afterwards).
 3. **Look up exact figures** in the table, picking the row with a model behind the router.
 4. **Search** (current text unless a date is stated; copies of a provision collapsed; five passages).
 5. **Write** from numbered passages as JSON, with quotations copied exactly.

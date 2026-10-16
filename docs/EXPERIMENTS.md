@@ -874,3 +874,85 @@ In the GDPR as first published in the Official Journal, the third trigger for ap
 **What moved, honestly.** Eight questions changed verdict: one clear improvement (q051), four `yes` to `partly`, and three `no` to `partly` (q014, q028, q048). Because the judge is a language model of the writer's family and was found too generous before, I do not read the four losses as proof that D is worse, nor the three `no` to `partly` as proof it is better. What I can read in the answers: q044 (as of the start of 2026, when do the high-risk rules apply?) still says 2 August 2026 for the whole Act, so showing the in-force dates did not by itself fix the anachronism; q048 (the GDPR's third DPO trigger as first published and now) searched both versions but the passages for the current text did not reach the writer, so it answered the original wording and said it could not compare. The repair needs better retrieval of the second version, not only more dates in the prompt.
 
 **Consequences.** The version-aware option and the dates stay in the code as options (off by default) with this result recorded as a failed repair; the as-of questions remain a known weak spot (as_of recall@5 is 0.40 in all four embedding variants of R4.1 to R4.3, n = 5). The test half is read once, for A (`experiments/p4_test_confirmation.py --config A --log`).
+
+
+## P4.6 test-half confirmation of the answer layer, run 2026-10-16 (commit d45cf1b; gold version 2, fingerprint 8c91df9a)
+
+### P4.6 the answer layer on the TEST half, configuration A, gold version 2 (40 questions: 31 retrieve, 4 table, 5 refuse)
+
+- retrieve questions: answered 20, declined 10, refused 1, from the table 0; correctness 0.52 (0.35 to 0.68)
+- baseline N (the same model from memory, no retrieval): correctness 0.76 (0.68 to 0.84)
+- answer layer against N, correctness: difference -0.242, 95 % interval -0.387 to -0.097; accuracy gain claimed: no
+- among the 20 answered: support 0.82; a cited source satisfies a primary gold provision 0.75; coverage 0.69; strict precision 0.67
+- table questions answered from the right row: 2/4; refusals refused with the right reason: 2/5; retrieve questions refused: 1
+- model time per question (all calls real): mean 5.02 s, median 4.22 s, slowest 15.30 s; tokens per question 1738 in, 181 out (the pipeline's calls only; judge and baseline calls are separate)
+
+Correctness by question type and language (answer layer, N; number of questions):
+
+- type as_of: 0.20, 0.50 (n = 5)
+- type comparison: 0.20, 0.60 (n = 5)
+- type cross_reference: 0.30, 0.80 (n = 5)
+- type definition: 0.62, 0.88 (n = 4)
+- type lookup: 0.88, 0.88 (n = 8)
+- type spanish_law: 0.75, 0.88 (n = 4)
+- language en: 0.61, 0.79 (n = 14)
+- language es: 0.44, 0.74 (n = 17)
+
+Retrieve questions not judged correct, and any table or refuse question that went the wrong way:
+
+- q001 (lookup): answer, partly: The answer correctly identifies the right to erasure and its conditions, but fails to mention that the right is not absolute and lists the specific exceptions provided in Article 17.3 of the GDPR.
+- q017 (definition): abstained, no: no answer given
+- q018 (definition): answer, partly: The answer correctly identifies the roles of provider and deployer but fails to mention the critical provision that a deployer can become a provider under certain circumstances, such as making substantial modifications.
+- q021 (cross_reference): abstained, no: no answer given
+- q022 (cross_reference): abstained, no: no answer given
+- q027 (cross_reference): answer, partly: The answer correctly identifies the prohibition but fails to mention the consequences for companies, specifically the administrative fines established in the AI Act.
+- q031 (comparison): abstained, no: no answer given
+- q034 (comparison): abstained, no: no answer given
+- q035 (comparison): abstained, no: no answer given
+- q036 (comparison): abstained, no: no answer given
+- q039 (spanish_law): refused, no: no answer given
+- q045 (as_of): abstained, no: no answer given
+- q046 (as_of): answer, partly: The answer incorrectly identifies the provision as Article 4a (which was introduced by the Omnibus Regulation) rather than the original Article 10(5) of the AI Act as published in 2024.
+- q050 (as_of): abstained, no: no answer given
+- q056 (table): went to abstained
+- q060 (refuse): went to abstained
+- q061 (refuse): went to abstained
+- q068 (lookup): answer, partly: The answer correctly identifies that the AI Act does not prohibit all facial recognition, but it omits the prohibition on emotion recognition in workplaces and educational settings, which is a key part of the reference answer.
+- q071 (cross_reference): abstained, no: no answer given
+- q075 (as_of): answer, no: The answer fails to provide the specific application dates required by the AI Act (August 2, 2026, and December 2, 2026) and incorrectly claims the regulation does not specify calendar dates for the obligation.
+- q076 (as_of): answer, partly: The answer fails to mention the specific application dates (August 2025 and August 2026) and incorrectly implies that all rules are currently in effect without acknowledging the transitional periods.
+- q079 (refuse): went to abstained
+
+## Reading P4.6, the answer layer on the sealed test half (16 October 2026)
+
+**The result is negative, and it is the result.** On the 31 test retrieval questions the answer layer (configuration A) was judged correct 0.52 of the time (0.35 to 0.68); the same model answering from memory with no search scored **0.76** (0.68 to 0.84). The paired difference is **-0.242 (-0.387 to -0.097)**: the interval excludes zero on the wrong side. So the project does **not** claim an accuracy gain over memory, and on this test half the answer layer was detectably *less* often judged correct than memory. This is one run of one configuration on 31 questions, judged by a model of the writer's family; the size of the gap is uncertain, but its sign is not.
+
+**Against the expectations written before the run.**
+
+| Stated expectation | Outcome |
+|---|---|
+| Correctness 0.45 to 0.65 | **Held** (0.52) |
+| The interval of the difference from memory includes 0 | **Did not hold** (-0.387 to -0.097) |
+| 15 to 30 % of retrieve questions declined | **Narrowly missed**: 10 of 31 declined (32 %), plus one wrongly refused |
+| The four table questions right | **Did not hold**: 2 of 4 from the right row |
+| The five refusals right | **Did not hold**: 2 of 5 refused with the right reason |
+| The judge generous as before | Not tested here |
+
+**Where the deficit comes from (read from the table above and from the caches; nothing new was asked of the model).** Eleven of the 31 retrieve questions got no answer: ten were declined ("not enough evidence") and one (q039, a Spanish question about answering work messages on holiday) was wrongly refused as legal advice. A question with no answer scores zero. On the **20 questions it did answer, the answer layer scored 0.80, and memory scored 0.80 on the same 20**; on the 11 it did not answer, memory scored 0.68. So the whole gap is questions the system declined, not answers it got worse. That is the design working as intended (it will not answer without a checked quotation) and, at the same time, a recall problem: on the test half retrieval finds a required provision for about half the questions (T1: recall@5 0.55), and the layer declines when it does not. This post-hoc split is exploratory; it was not registered and it does not change the result above.
+
+**Routing did not generalise.** On the development half the router was 40 of 40, refusals 5 of 5 and figures 4 of 4. On the test half:
+
+- **Three of five refusal questions were not refused**: q060 (what the Court of Justice decided in Schrems II: case law), q061 (the largest GDPR fine ever, and against whom: enforcement decisions) and q079 (whether India is on the EU's adequacy list: an adequacy decision). The router prompt defines "out of corpus" as another country's law or a regulator's guide; it never mentions case law, enforcement decisions or adequacy lists, and the model sent all three to `retrieve`. They then ended as "not enough evidence", so **no answer was invented**, but they were not refused with the right reason.
+- **Of four exact-figure questions, one never reached the table** (q056, the date from which the AI Act's high-risk rules apply: the router said `retrieve`, and the text then gave no checked answer) **and one got the wrong figure**: q078 (the maximum fine for failing to notify a breach in time) was answered from the *upper-tier* row (EUR 20 million or 4 %) when the gold row is the lower tier (EUR 10 million or 2 %). A wrong number stated with confidence is worse than a decline, and it is the clearest single failure in this run.
+- The development numbers were therefore optimistic for routing: the router's definitions and the picker's behaviour were written and checked with the development questions in view.
+
+**What held.** Among the answers it gave, the quotation check and support held up: support 0.82, and a cited source satisfies a primary gold provision for 0.75 of them. No answer was invented for an out-of-scope question. Model time per question with real calls was 5.0 s mean, 4.2 s median, 15.3 s slowest (not the deployed end-to-end figure).
+
+**Correctness by type (answer layer, memory):** lookups 0.88 and 0.88; definitions 0.62 and 0.88; Spanish-law 0.75 and 0.88; cross-references 0.30 and 0.80; comparisons 0.20 and 0.60; as-of questions 0.20 and 0.50. By language: English 0.61 and 0.79, Spanish 0.44 and 0.74. The weakest areas are the ones that need several provisions or two versions, and Spanish.
+
+**What this changes.**
+
+1. The claim is restated (decision 114): quotations are checked in code and sources named; the system declines rather than invents; it did **not** beat memory on accuracy, and its refusal and exact-figure routing is **not yet reliable on questions it was not tuned on**.
+2. The router definition and the picker are **not** changed on the strength of this result (decision 115): the test half is spent, and tuning to it would make any later number on it meaningless. A fix (naming case law, enforcement decisions and adequacy lists as out of corpus; a tier check for fines) is a candidate that must be measured on new, unseen questions.
+3. A second read of the test half is not planned. If the layer is changed, the honest comparison needs a new set of unseen questions.
+4. The first attempt of this run stopped on a temporary overload error from the model service (HTTP 503) before anything was logged; it was resumed from the answer cache. This is one read of the test half, not two.
