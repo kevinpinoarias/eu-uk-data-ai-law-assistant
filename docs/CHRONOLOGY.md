@@ -38,6 +38,10 @@ Generated from the git history by `scripts/make_chronology.py`; regenerate after
 | 32 | 2026-10-15 21:08 | `91dd3f1` | Build and run the container; document the results and the remaining measurements |
 | 33 | 2026-10-15 21:16 | `bc3d683` | Add degraded mode to the pipeline and pre-register P4.7 |
 | 34 | 2026-10-15 21:24 | `a233f17` | Add Spanish page labels, accessibility checks, CI smoke test, Qwen3 embedder; pre-register R4.2 |
+| 35 | 2026-10-15 21:46 | `a8851ac` | Log R4.2 (second embedding model not adopted), degraded mode, page, CI smoke test |
+| 36 | 2026-10-16 12:03 | `03eedb6` | Add bilingual privacy notice, hourly trace pruning, accessibility checklist; log P4.5 (variant D not adopted) |
+| 37 | 2026-10-16 12:08 | `d45cf1b` | Fill the privacy notice with the owner's details; put the lawyer's review back on the list |
+| 38 | 2026-10-16 12:32 | `4d94b57` | Log P4.6: the answer layer on the sealed test half did not beat memory |
 
 ## What each commit said
 
@@ -564,3 +568,32 @@ Rebuilt: 1.74 GB, healthy in 10 s, 1.5 GiB at rest, page, /health and the
 503 path verified. Decision 102, playbook and journey lessons, interview
 Q81-83, ROADMAP lists the exact commands for the three measurements that
 wait for the model's daily allowance.
+
+### 35. `a8851ac` Log R4.2 (second embedding model not adopted), degraded mode, page, CI smoke test
+
+R4.2: Qwen3-Embedding-0.6B recall@5 0.47 vs BGE-M3 0.53 (paired -0.065,
+-0.202 to +0.073); fusion 0.58 not detectable; BGE-M3 stays (decision 107).
+P4.7 degraded mode measured with every model call failing (decision 103).
+Docs: decisions 103-107, journey, playbook, glossary, experiment index,
+interview questions, chronology; README and DEPLOYMENT notes updated.
+
+### 36. `03eedb6` Add bilingual privacy notice, hourly trace pruning, accessibility checklist; log P4.5 (variant D not adopted)
+
+- web/privacy.html at /privacy, linked from the page; tests tie retention, trace fields and placeholders to the code
+- TraceLog deletes old rows itself (first write, then hourly), not only at start-up
+- start-up warning while the notice has owner placeholders; smoke test checks /privacy
+- docs/ACCESSIBILITY_CHECKLIST.md; lawyer's review dropped from plans (label kept)
+- P4.5 result: variant D equals A (0.68 vs 0.68), pre-registered rule fails, A stays (decisions 108 to 111)
+
+### 37. `d45cf1b` Fill the privacy notice with the owner's details; put the lawyer's review back on the list
+
+- notice names the owner, Glasgow (UK), a contact address and Microsoft Azure as planned host; UK GDPR and ICO first
+- open points flagged as unchecked: host/region, ICO fee, EU representative
+- decisions 112 (lawyer's review reinstated) and 113; tests updated
+
+### 38. `4d94b57` Log P4.6: the answer layer on the sealed test half did not beat memory
+
+- correctness 0.52 against 0.76 for memory, paired -0.242 (-0.387 to -0.097); equal (0.80) on the 20 answered
+- routing did not generalise: refusals 2/5, figures 2/4 (case law, enforcement and adequacy questions not recognised; one wrong fine tier)
+- claim restated (decision 114); router and picker not changed on the test half (decision 115)
+- README, experiment index, journey, roadmap and glossary updated
