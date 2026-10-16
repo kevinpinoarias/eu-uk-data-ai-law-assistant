@@ -41,10 +41,46 @@ Every question costs model calls. The service limits **6 questions a minute per 
 
 The step-by-step plan, with privacy, cost, CI and failure handling, is in [PHASE5_PLAN.md](PHASE5_PLAN.md).
 
+## Written on 16 October 2026 and not yet run (they need accounts)
+
+- **A cold-start notice** on the page: after 4 seconds without an answer the status line says the assistant may be waking up (English and Spanish, announced to screen readers, cleared when the answer arrives). Built and tested; checked in the browser by slowing the request.
+- **A data bundle** (`scripts/make_data_bundle.py` writes `dist/data-bundle.zip`: the chunks and the saved BGE-M3 vectors, 17 files, 47.8 MB). The Dockerfile copies those files, and Git does not hold them, so CI could not build the image from a clean checkout; the bundle is uploaded once to a GitHub release and the workflow unpacks it. It carries the law texts under their publishers' reuse terms (SOURCES.md, NOTICE).
+- **A manual deploy workflow** (`.github/workflows/deploy.yml`): builds the image, pushes it to GitHub's container registry with the workflow's own token, signs in to Azure keylessly, points the Container App at the new image and waits for `/health`. It runs only when started by hand. Tests check its triggers, permissions and that it stores no password; nothing proves it works until it runs once with the accounts below.
+
+## Free-tier terms read on 16 October 2026 (secondary sources for prices; confirm in the portal)
+
+- **Azure Container Apps (Consumption plan)**: per subscription each month, 180,000 vCPU-seconds, 360,000 GiB-seconds and 2 million requests are free, then billed per second; an app scaled to zero is not charged. At 1 vCPU and 2 GiB that is about 50 hours a month of active running (my arithmetic). The usual cause of a surprise bill is a minimum replica count above zero. Image size is not a billed quantity in what I read.
+- **GitHub container registry**: public packages are free and container storage and bandwidth are "currently free" in GitHub's billing documentation, with no published end date. The image must be public so the app can pull it without a stored credential; it holds the law texts and the BGE-M3 model and no key.
+- The Gemini bill is separate and starts when billing is enabled on the key.
+
+## Hosting options re-checked on 16 October 2026 (the owner wants a permanently free tier)
+
+The service needs about 1.5 GiB of memory because BGE-M3 runs on the server's CPU. That rules out the free tiers that are small or need no card.
+
+| Option | Free and permanent? | Fit | Read from |
+|---|---|---|---|
+| **Google Cloud Run** | Yes: 180,000 vCPU-seconds, 360,000 GiB-seconds and 2 million requests a month, resetting monthly, applied as a spending discount at Tier 1 prices; billing account required (a card) | Fits (2 GiB, scale to zero). Same Google billing account as the Gemini key. The image must sit in Google's Artifact Registry (0.5 GB free, then a few cents a month for a 1.7 GB image; to confirm) or be pulled through a remote repository | cloud.google.com/run/pricing |
+| **Azure Container Apps** | The monthly grant is per subscription with no end date in what I read; the $200 credit and the free account last 30 days, after which the account is disabled until upgraded to pay-as-you-go (a card), and the grant then still applies | Fits; the plan on file | azure.microsoft.com pricing pages |
+| **Hugging Face Spaces** | No: Docker Spaces need a paid plan (PRO) to create; only static Spaces are free, and the free CPU hardware (2 vCPU, 16 GB) is for paid-plan Docker/Gradio Spaces | Does not fit the free requirement | huggingface.co/docs/hub/spaces-overview |
+| Small free web hosts (512 MB, e.g. Render) and Oracle's always-free VM | Not checked today; from general knowledge the first is too small for the model and the second is a VM to look after and needs a card | Unverified | none |
+
+Whichever host: the Gemini key needs billing for a public demo in the UK or EEA (decision at the start of the project), so a card is needed anyway. The deploy workflow is written for Azure; Cloud Run would need its own version (keyless sign-in works there too).
+
 ## Steps left (in order)
 
-1. Billing on the Gemini project, with a budget alert (yours).
-2. Build and run the image locally once; measure the uncached latency of 20 questions.
-3. Create the hosting account and a deployment that scales to zero (your account details; the hosting plan and its free grant should be re-read on the provider's pricing page before choosing sizes).
-4. A deployment workflow that builds the image and publishes it, using keyless authentication, not a stored password.
-5. Put the live link in the README only after the test-half confirmation, so the demo and the reported numbers are the same system.
+Mine, already done: cold-start notice, data bundle, deploy workflow, the candidate router and picker fixes and batch C (decisions 116 to 118). Waiting on the model's daily quota or a paid key: finishing the batch C comparison (`python experiments/c1_routing_fixes.py --log` resumes from its cache; about 90 calls remain, by the cache counts).
+
+Needs you (accounts and approvals; commands below are written from general knowledge and not run, so check each against the provider's current documentation):
+
+1. **Gemini billing with a budget alert.** In Google AI Studio or the Cloud console, attach a billing account to the project that owns the key and create a budget alert (an amount you are happy to lose, with an email at 50 % and 100 %). Then tell me; I run the measurements that wait for a paid key. Never paste the key in chat: it stays in `.env` (git-ignored) and, for the host, in the Container App's secrets.
+2. **Docker Desktop running, and your approval of the build.** The image build downloads the 2.27 GB BGE-M3 model (BAAI/bge-m3 from Hugging Face, MIT licence); the image comes to about 1.74 GB. Start Docker Desktop and say yes, and I rebuild, run it locally and time 20 uncached questions.
+3. **An Azure subscription** (card and phone verification), then, in a terminal:
+   - a resource group and a Container Apps environment in a region you choose (the privacy notice names the host; say the region so I can add it);
+   - the app, created once with a placeholder image, minimum replicas 0, maximum 1, 1 vCPU and 2 GiB, external ingress, and the model key stored as a Container App secret exposed as the environment variable `GEMINI_API_KEY` (plus `TRUST_PROXY=1`);
+   - an app registration with a federated credential for this repository on branch `main` (issuer `https://token.actions.githubusercontent.com`, subject `repo:kevinpinoarias/eu-uk-data-ai-law-assistant:ref:refs/heads/main`, audience `api://AzureADTokenExchange`) and the Contributor role on that resource group only;
+   - the five repository variables the workflow names (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `AZURE_CONTAINER_APP`). They are identifiers, not secrets.
+4. **A release holding the bundle** (licences checked 16 October, decision 119): `python scripts/make_data_bundle.py`, then on GitHub create a release tagged `data-v1` (the workflow's default tag) with `dist/data-bundle.zip` attached (the `gh` command-line tool is not installed here, so use the web page: Releases, Draft a new release). Paste the credit lines from `NOTICE` into the release notes. Re-do it after any re-chunking or re-embedding.
+5. **Run the workflow once** (Actions, Deploy, Run workflow). When the first image is pushed, set the package to public in GitHub, and set the app's target port to 8000 if the placeholder used another.
+6. **The privacy notice**: confirm the host and region. The ICO fee and EU representative questions were researched on 16 October (decision 120): probably both apply as things stand, so decide between paying and appointing, processing less, or not hosting publicly. Take the ICO's self-assessment ("Do I need to pay a fee?" on ico.org.uk) yourself; it is about your circumstances.
+7. **A screen-reader pass** on the page (NVDA is free on Windows). An automated audit in the browser on 16 October found a sound structure (skip link first, logical tab order with a 3 px focus outline, labelled controls, a status line, a live result region that receives focus, headings and landmarks on both pages, table headers with `scope`) and no problems, but that is not hearing it: listen for whether a result is announced once or twice (focus moves to the result and the region is also live).
+8. Put the live link in the README only after the test-half confirmation, so the demo and the reported numbers are the same system. The test-half numbers are in the README already (decision 114); any later change to the router or picker must be labelled and measured on new questions first.

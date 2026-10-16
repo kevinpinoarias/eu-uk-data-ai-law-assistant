@@ -116,6 +116,40 @@ ROUTE_INSTRUCTIONS = (
 )
 
 
+# Candidate (decision 116), written after the sealed test half showed three refusals sent to search
+# (a court case, the largest fine, an adequacy list) and an application-date question sent to search.
+# It states those categories as definitions, with a guard against refusing questions about what the
+# law itself says. Not the default: it is measured on batch C (experiments/c1_routing_fixes.py)
+# before any decision to adopt it.
+ROUTE_INSTRUCTIONS_V2 = (
+    "You route questions for an assistant that answers from EU, Spanish and UK data-protection and "
+    "AI law (the GDPR, the EU AI Act and its 2026 amendment, the UK GDPR, the UK Data Protection Act "
+    "2018, the UK Data (Use and Access) Act 2025 and Spain's data-protection law, the LOPDGDD). It "
+    "holds the text of those laws and a small table of exact figures. It does not hold case law, "
+    "regulators' decisions or guidance, or any other country's law. Decide what to do with the "
+    "user's question.\n"
+    "Routes:\n"
+    '- "retrieve": the question asks what the law says or means (a right, a duty, a definition, a '
+    "comparison between jurisdictions, what applied on a given date). This is the usual case, "
+    "including a general question that mentions the user's business ('do I need a data protection "
+    "officer?'). A question that mentions courts, regulators, fines, adequacy or transfers abroad is "
+    "still 'retrieve' when it asks what the text of the law says (the right to go to court, an "
+    "authority's powers, the rule on adequacy decisions, the factors that decide a fine, who can be "
+    "fined).\n"
+    '- "table": the question asks for ONE exact figure about one jurisdiction as it stands now: the '
+    "maximum fine, a deadline in days or hours, a minimum age, or the date from which a rule starts "
+    "to apply. Questions that compare jurisdictions or ask about a past date are 'retrieve'.\n"
+    '- "refuse": the assistant must not answer. Give a reason: "out_of_corpus" (another '
+    "country's law, such as California; a regulator's guide or guidance rather than the law itself; "
+    "what a court decided in a case; a regulator's enforcement decision or the fines actually "
+    "imposed on named companies; or which countries currently have an adequacy decision) or "
+    '"legal_advice" (the user wants a judgment on their own concrete situation, a compliance check, '
+    "or a document written for them).\n"
+    'Reply with JSON only: {"route": "retrieve"|"table"|"refuse", '
+    '"reason": null|"out_of_corpus"|"legal_advice"}.'
+)
+
+
 def parse_route(text: str) -> Route:
     cleaned = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.MULTILINE).strip()
     try:
@@ -135,11 +169,12 @@ def parse_route(text: str) -> Route:
 class LLMRouter:
     name = "llm"
 
-    def __init__(self, generator) -> None:
+    def __init__(self, generator, instructions: str = ROUTE_INSTRUCTIONS) -> None:
         self._generator = generator
+        self._instructions = instructions
 
     def route(self, text: str) -> Route:
         reply = self._generator.generate(
-            text, system=ROUTE_INSTRUCTIONS, temperature=0.0, max_output_tokens=100, json_output=True
+            text, system=self._instructions, temperature=0.0, max_output_tokens=100, json_output=True
         )
         return parse_route(reply)

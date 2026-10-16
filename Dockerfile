@@ -1,7 +1,9 @@
 # The demo service on a plain CPU (no graphics card needed): BGE-M3 embeds a question in about 0.12 s on a
 # CPU, the chunk vectors are precomputed, and the answer model is called over the network.
 #
-# Not built or run yet (the build downloads the 2.3 GB BGE-M3 weights). Build with the saved vectors present:
+# Built and run on 15 October 2026 (1.74 GB; the build downloads the 2.3 GB BGE-M3 weights). The chunks and the
+# saved vectors are git-ignored: build with them present locally, or let the deploy workflow unpack the data
+# bundle (scripts/make_data_bundle.py) first.
 #   docker build -t law-assistant .
 #   docker run -p 8000:8000 -e GEMINI_API_KEY=... law-assistant
 FROM python:3.12-slim

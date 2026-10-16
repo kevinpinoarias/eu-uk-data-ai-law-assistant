@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from law_assistant.facts.table import Fact
 
@@ -60,14 +60,44 @@ PICK_INSTRUCTIONS = (
 )
 
 
+# Candidate (decision 116), written after the sealed test half showed the upper fine tier given for a
+# breach-notification question (Article 33 falls in the lower tier). Used together with `apply_scope`,
+# which puts the infringements each tier covers into the row's subject, because the model sees only
+# the subjects. Not the default.
+PICK_INSTRUCTIONS_V2 = (
+    "You pick the row of a table of exact legal figures that answers a user's question. Each row is "
+    "a key and a subject. Choose the ONE row that gives the exact figure the question asks for, "
+    "respecting the jurisdiction the question names (EU, UK and Spain have separate rows). Some rows "
+    "are fine tiers whose subject lists the obligations they cover: if the question names a breach, "
+    "choose the tier whose list contains that obligation; if it names none and asks for the highest "
+    "or maximum fine, choose the highest tier. If no row gives the figure the question asks for, or "
+    "the question needs more than a single figure, answer null. Reply with JSON only: "
+    '{"key": "<a key from the list>"} or {"key": null}.\n'
+    "Rows:\n"
+)
+
+
+def apply_scope(facts: Sequence[Fact], overlay: dict[str, dict[str, str]]) -> list[Fact]:
+    """The facts with the subjects named in `overlay` replaced (key -> subject_en, subject_es)."""
+    unknown = set(overlay) - {f.key for f in facts}
+    if unknown:
+        raise KeyError(f"the overlay names facts that do not exist: {sorted(unknown)}")
+    return [
+        replace(f, subject_en=overlay[f.key]["subject_en"], subject_es=overlay[f.key]["subject_es"])
+        if f.key in overlay
+        else f
+        for f in facts
+    ]
+
+
 class LLMFactPicker:
     """Let a language model choose the row, or none, from the whole table (19 short lines)."""
 
-    def __init__(self, facts: Sequence[Fact], generator) -> None:
+    def __init__(self, facts: Sequence[Fact], generator, instructions: str = PICK_INSTRUCTIONS) -> None:
         self._facts = {f.key: f for f in facts}
         self._generator = generator
         rows = [f"- {f.key} ({', '.join(f.jurisdictions)}): {f.subject_en}" for f in facts]
-        self._system = PICK_INSTRUCTIONS + "\n".join(rows)
+        self._system = instructions + "\n".join(rows)
 
     def pick(self, question: str, jurisdictions: Sequence[str] = ()) -> Fact | None:
         named = f"Jurisdictions named in the question: {', '.join(jurisdictions) or 'none'}.\n"

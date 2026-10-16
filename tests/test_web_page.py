@@ -82,8 +82,31 @@ def test_the_result_area_is_announced_and_errors_are_alerts():
     assert 'setAttribute("role", "alert")' in PAGE  # the error paragraph is created by the script
 
 
+def test_the_footer_carries_each_publisher_s_required_credit_in_both_languages():
+    # SOURCES.md lists the credit line each publisher requires; the page shows the texts, so it shows the credits.
+    d = dictionary()
+    for lang in ("en", "es"):
+        credits = d[lang]["credits"]
+        assert "Source: EUR-Lex, © European Union" in credits, lang
+        assert "Open Government Licence v3.0" in credits, lang
+        assert "Fuente de los datos: Agencia Estatal Boletín Oficial del Estado" in credits, lang
+        assert "meramente informativo" in credits, lang
+    assert 'data-i18n="credits"' in PAGE
+
+
 def test_the_language_buttons_say_which_is_selected():
     assert PAGE.count("aria-pressed") >= 2
+
+
+def test_a_slow_answer_shows_a_waking_message_in_the_announced_status_line_and_clears_it():
+    # A host that scales to zero starts cold: the first visitor waits for the container and the model. The page
+    # says so after a few seconds, in both languages, in the status element that screen readers announce.
+    d = dictionary()
+    assert "wak" in d["en"]["waking"].lower() and "desp" in d["es"]["waking"].lower()
+    assert re.search(r'id="status"[^>]*role="status"|role="status"[^>]*id="status"', PAGE)
+    script = PAGE.split("<script>")[-1]
+    assert re.search(r"setTimeout\([^;]*waking", script, re.DOTALL)
+    assert "clearTimeout" in script
 
 
 # --- contrast ------------------------------------------------------------------------------------------------

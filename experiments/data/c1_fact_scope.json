@@ -1,0 +1,10 @@
+{
+  "gdpr-fine-lower-tier": {
+    "subject_en": "Lower tier of administrative fines under the EU GDPR (Article 83(4): the controller's and processor's obligations in Articles 8, 11 and 25 to 39, such as data protection by design, records of processing, security, breach notification, impact assessments and the data protection officer; and the obligations of certification and monitoring bodies)",
+    "subject_es": "Nivel inferior de las multas administrativas del RGPD de la UE (artículo 83.4: las obligaciones del responsable y del encargado de los artículos 8, 11 y 25 a 39, como la protección de datos desde el diseño, el registro de actividades, la seguridad, la notificación de brechas, las evaluaciones de impacto y el delegado de protección de datos; y las de los organismos de certificación y de supervisión)"
+  },
+  "gdpr-fine-upper-tier": {
+    "subject_en": "Highest tier of administrative fines under the EU GDPR (Article 83(5): the basic principles for processing and consent in Articles 5, 6, 7 and 9, data subjects' rights in Articles 12 to 22, transfers to third countries in Articles 44 to 49, and non-compliance with a supervisory authority's order)",
+    "subject_es": "Nivel superior de las multas administrativas del RGPD de la UE (artículo 83.5: los principios básicos del tratamiento y el consentimiento de los artículos 5, 6, 7 y 9, los derechos de los interesados de los artículos 12 a 22, las transferencias a terceros países de los artículos 44 a 49 y el incumplimiento de una orden de la autoridad de control)"
+  }
+}

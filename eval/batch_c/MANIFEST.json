@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "name": "batch C: routing and figure picking on unseen questions",
+  "frozen": "2026-10-16",
+  "sha256": "988776702a51eba9cf17a9af2426ea287076aa2f8e027530a9ce97acac688b6d",
+  "questions": 37,
+  "by_route": {
+    "refuse": 16,
+    "table": 10,
+    "retrieve": 11
+  },
+  "by_language": {
+    "en": 22,
+    "es": 15
+  },
+  "by_refusal_reason": {
+    "out_of_corpus": 10,
+    "legal_advice": 6
+  },
+  "purpose": "To measure candidate fixes to the router and the fact picker (decision 115) on questions that no earlier design step has seen. Written before either candidate was run on any of them. Not a sample of real users: the categories follow the failures the test half showed, so a good result here shows the fix generalises to new instances of those categories, not that routing is good in general.",
+  "review": "Drafted by an AI assistant and checked by scripts (well-formed, every cited unit, pinpoint and quote exists in the corpus, every table key exists, no wording copied from the gold text, no duplicate of a frozen question). Not reviewed by independent readers and not reviewed by a lawyer. The route labels (retrieve, table, refuse and the reason) are what is measured; the expected answers and gold provisions of the retrieve questions are not graded here."
+}

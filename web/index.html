@@ -99,7 +99,8 @@
   <footer><span data-i18n="footer">Source code, methods and every experiment, including the failures:</span>
     <a href="https://github.com/kevinpinoarias/eu-uk-data-ai-law-assistant" data-i18n="footerLink">the project repository</a>.
     <span data-i18n="privacy">Please do not type personal data (names, ID numbers, health details) into the question box. Questions are logged without your address, to improve the system, and deleted after 30 days.</span>
-    <a href="/privacy" data-i18n="privacyLink">Privacy notice</a></footer>
+    <a href="/privacy" data-i18n="privacyLink">Privacy notice</a>
+    <p class="credits" data-i18n="credits">Legal texts: Source: EUR-Lex, © European Union (only the Official Journal version is authentic; consolidated texts have no legal effect). Contains public sector information licensed under the Open Government Licence v3.0 (legislation.gov.uk). Fuente de los datos: Agencia Estatal Boletín Oficial del Estado (texto consolidado, de carácter meramente informativo). The texts have been reformatted and split into passages; their meaning is unchanged.</p></footer>
 </main>
 <script type="application/json" id="i18n">
 {
@@ -115,6 +116,7 @@
     "hint": "Up to 1,000 characters. Please do not type personal data.",
     "ask": "Ask",
     "searching": "Searching the texts…",
+    "waking": "Still working. If nobody has used the assistant for a while it has to wake up first, which can take up to a minute.",
     "examplesLabel": "Try:",
     "examples": [
       {"label": "What is a data breach?", "q": "Under the GDPR, what does a data breach actually mean in legal terms?"},
@@ -131,7 +133,8 @@
     "footer": "Source code, methods and every experiment, including the failures:",
     "footerLink": "the project repository",
     "privacy": "Please do not type personal data (names, ID numbers, health details) into the question box. Questions are logged without your address, to improve the system, and deleted after 30 days.",
-    "privacyLink": "Privacy notice"
+    "privacyLink": "Privacy notice",
+    "credits": "Legal texts: Source: EUR-Lex, © European Union (only the Official Journal version is authentic; consolidated texts have no legal effect). Contains public sector information licensed under the Open Government Licence v3.0 (legislation.gov.uk). Fuente de los datos: Agencia Estatal Boletín Oficial del Estado (texto consolidado, de carácter meramente informativo). The texts have been reformatted and split into passages; their meaning is unchanged."
   },
   "es": {
     "skip": "Saltar al cuadro de pregunta",
@@ -145,6 +148,7 @@
     "hint": "Hasta 1.000 caracteres. Por favor, no escribas datos personales.",
     "ask": "Preguntar",
     "searching": "Buscando en los textos…",
+    "waking": "Sigo trabajando. Si nadie ha usado el asistente en un rato, primero tiene que despertar, y eso puede tardar hasta un minuto.",
     "examplesLabel": "Prueba:",
     "examples": [
       {"label": "¿Qué es una brecha de datos?", "q": "Según el RGPD, ¿qué significa exactamente una violación de la seguridad de los datos personales en términos jurídicos?"},
@@ -161,7 +165,8 @@
     "footer": "Código fuente, métodos y todos los experimentos, incluidos los fallos:",
     "footerLink": "el repositorio del proyecto",
     "privacy": "Por favor, no escribas datos personales (nombres, números de identificación, datos de salud) en el cuadro de pregunta. Las preguntas se registran sin tu dirección, para mejorar el sistema, y se borran a los 30 días.",
-    "privacyLink": "Aviso de privacidad"
+    "privacyLink": "Aviso de privacidad",
+    "credits": "Textos legales: Source: EUR-Lex, © European Union (solo la versión del Diario Oficial es auténtica; los textos consolidados carecen de efecto jurídico). Contains public sector information licensed under the Open Government Licence v3.0 (legislation.gov.uk). Fuente de los datos: Agencia Estatal Boletín Oficial del Estado (texto consolidado, de carácter meramente informativo). Los textos se han reformateado y dividido en pasajes; su significado no se ha modificado."
   }
 }
 </script>
@@ -173,6 +178,7 @@
   var statusEl = document.getElementById("status"), btn = document.getElementById("ask");
   var count = document.getElementById("count");
   var lang = "en";
+  var WAKING_AFTER_MS = 4000;
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -243,11 +249,13 @@
     if (!question) return;
     btn.disabled = true; out.setAttribute("aria-busy", "true");
     statusEl.textContent = T[lang].searching; body.replaceChildren();
+    // A host that scales to zero starts cold; after a few seconds say why the wait is long (announced, as the status line is).
+    var waking = setTimeout(function () { statusEl.textContent = T[lang].waking; }, WAKING_AFTER_MS);
     fetch("/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: question }) })
       .then(function (r) { return r.json().then(function (d) { return [r.status, d]; }); })
       .then(function (pair) { render(pair[0], pair[1]); })
       .catch(function () { render(0, { error: T[lang].networkError }); })
-      .finally(function () { btn.disabled = false; out.removeAttribute("aria-busy"); statusEl.textContent = ""; });
+      .finally(function () { clearTimeout(waking); btn.disabled = false; out.removeAttribute("aria-busy"); statusEl.textContent = ""; });
   });
   box.addEventListener("input", updateCount);
   document.querySelectorAll("[data-lang]").forEach(function (b) {
