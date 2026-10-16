@@ -1,8 +1,10 @@
 """
 The deployment files that cannot be run here (no cloud account yet): the data bundle that lets CI build the image
-from a clean checkout, and the manual deploy workflow. These tests check what can be checked without a cloud:
-the bundle holds exactly what the Dockerfile copies, and the workflow cannot run by accident, asks for the
-permissions it needs and no more, and stores no password.
+from a clean checkout, the manual deploy workflow for Azure Container Apps and the one-time setup script. These
+tests check what can be checked without a cloud: the bundle holds exactly what the Dockerfile copies; the workflow
+cannot run by accident, asks for the permissions it needs and no more, stores no password or key, and leaves the
+app closed to people without the access code and unable to scale itself into a bill; the script is valid shell,
+reads secrets hidden, limits the keyless sign-in to this repository and gives it one resource group only.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
 DOCKERFILE = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+SETUP = (ROOT / "scripts" / "azure_setup.sh").read_text(encoding="utf-8")
 
 
 def load_bundle_script():
@@ -85,9 +88,55 @@ def test_the_deploy_workflow_stores_no_password_or_key():
     assert not re.search(
         r"(?i)AZURE_CREDENTIALS|client-secret|password:\s*\$\{\{\s*secrets\.(?!GITHUB_TOKEN)", WORKFLOW
     )
-    assert (
-        "GEMINI_API_KEY" not in WORKFLOW
-    )  # the model key lives in the host, never in the image or the workflow
+    # the model key and the access code are named, never held: the app reads them from its own secret store
+    assert all(
+        m.group(0).endswith("=secretref:") for m in re.finditer(r"GEMINI_API_KEY=?(?:secretref:)?", WORKFLOW)
+    )
+    assert "GEMINI_API_KEY=secretref:gemini-key" in WORKFLOW
+
+
+def test_the_app_stays_closed_to_visitors_without_the_code_and_cannot_scale_into_a_bill():
+    # Every deploy re-asserts these, so an app set up carelessly by hand is corrected, or the deploy fails.
+    for setting in (
+        "ACCESS_CODE=secretref:access-code",
+        "--min-replicas 0",
+        "--max-replicas 1",
+        "--target-port 8000",
+    ):
+        assert setting in WORKFLOW, setting
+
+
+def test_the_setup_script_reads_secrets_hidden_and_is_valid_shell():
+    import shutil
+    import subprocess
+
+    def working_bash():
+        # On Windows `bash` can be the WSL launcher, which fails when no Linux distribution has a shell.
+        git_bash = (r"C:\Program Files\Git\bin\bash.exe", r"C:\Program Files\Git\usr\bin\bash.exe")
+        for candidate in (shutil.which("bash"), *git_bash):
+            if candidate and Path(candidate).exists():
+                probe = subprocess.run([candidate, "-c", "echo ok"], capture_output=True, text=True)
+                if probe.returncode == 0 and probe.stdout.strip() == "ok":
+                    return candidate
+        return None
+
+    assert SETUP.count("read -rsp") >= 2  # the Gemini key and the access code, typed hidden
+    assert not re.search(r"echo\s+\"?\$(KEY|CODE|value)", SETUP)  # never echoed
+    bash = working_bash()
+    if bash is None:
+        pytest.skip("no working bash on this machine")
+    result = subprocess.run(
+        [bash, "-n", str(ROOT / "scripts" / "azure_setup.sh")], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_the_setup_script_limits_the_sign_in_to_this_repository_and_one_resource_group():
+    assert "kevinpinoarias/eu-uk-data-ai-law-assistant" in SETUP
+    assert "ref:refs/heads/main" in SETUP  # only the main branch can sign in
+    assert "--role Contributor" in SETUP and "resourceGroups/" in SETUP  # not the whole subscription
+    assert "Owner" not in SETUP
+    assert "--min-replicas 0" in SETUP and "--max-replicas 1" in SETUP
 
 
 def test_every_action_is_pinned_to_a_version():

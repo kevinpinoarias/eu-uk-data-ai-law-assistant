@@ -1,9 +1,9 @@
 """
 A trace of every question the service handles: what route it took, which passages were retrieved, how
 long each step took and how it ended. This is how a retrieval system is debugged after it ships (why did
-this question get no answer?) and how latency is measured on real traffic. The client's address is never
-stored; the question text is, because the traces are the only way to see what people ask, so a deployment
-that logs them must say so.
+this question get no answer?) and how latency is measured on real traffic. Neither the client's address nor
+the text of the question is stored (a question can contain personal data, and the traces only need to show
+how the system behaved), so a row cannot identify anyone. Rows are still deleted after a retention period.
 """
 
 from __future__ import annotations

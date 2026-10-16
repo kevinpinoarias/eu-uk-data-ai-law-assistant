@@ -98,7 +98,7 @@
 
   <footer><span data-i18n="footer">Source code, methods and every experiment, including the failures:</span>
     <a href="https://github.com/kevinpinoarias/eu-uk-data-ai-law-assistant" data-i18n="footerLink">the project repository</a>.
-    <span data-i18n="privacy">Please do not type personal data (names, ID numbers, health details) into the question box. Questions are logged without your address, to improve the system, and deleted after 30 days.</span>
+    <span data-i18n="privacy">Please do not type personal data (names, ID numbers, health details) into the question box: it is sent to Google to produce the answer. The text of your question is not kept, and neither is your address; only how each question ended and how long it took is logged, for 30 days.</span>
     <a href="/privacy" data-i18n="privacyLink">Privacy notice</a>
     <p class="credits" data-i18n="credits">Legal texts: Source: EUR-Lex, © European Union (only the Official Journal version is authentic; consolidated texts have no legal effect). Contains public sector information licensed under the Open Government Licence v3.0 (legislation.gov.uk). Fuente de los datos: Agencia Estatal Boletín Oficial del Estado (texto consolidado, de carácter meramente informativo). The texts have been reformatted and split into passages; their meaning is unchanged.</p></footer>
 </main>
@@ -132,8 +132,9 @@
     "genericError": "Something went wrong.",
     "footer": "Source code, methods and every experiment, including the failures:",
     "footerLink": "the project repository",
-    "privacy": "Please do not type personal data (names, ID numbers, health details) into the question box. Questions are logged without your address, to improve the system, and deleted after 30 days.",
+    "privacy": "Please do not type personal data (names, ID numbers, health details) into the question box: it is sent to Google to produce the answer. The text of your question is not kept, and neither is your address; only how each question ended and how long it took is logged, for 30 days.",
     "privacyLink": "Privacy notice",
+    "accessNeeded": "An access code is needed to ask questions. Please use the link you were given.",
     "credits": "Legal texts: Source: EUR-Lex, © European Union (only the Official Journal version is authentic; consolidated texts have no legal effect). Contains public sector information licensed under the Open Government Licence v3.0 (legislation.gov.uk). Fuente de los datos: Agencia Estatal Boletín Oficial del Estado (texto consolidado, de carácter meramente informativo). The texts have been reformatted and split into passages; their meaning is unchanged."
   },
   "es": {
@@ -164,8 +165,9 @@
     "genericError": "Algo ha ido mal.",
     "footer": "Código fuente, métodos y todos los experimentos, incluidos los fallos:",
     "footerLink": "el repositorio del proyecto",
-    "privacy": "Por favor, no escribas datos personales (nombres, números de identificación, datos de salud) en el cuadro de pregunta. Las preguntas se registran sin tu dirección, para mejorar el sistema, y se borran a los 30 días.",
+    "privacy": "Por favor, no escribas datos personales (nombres, números de identificación, datos de salud) en el cuadro de pregunta: se envía a Google para elaborar la respuesta. El texto de tu pregunta no se conserva, ni tu dirección; solo se registra cómo terminó cada pregunta y cuánto tardó, durante 30 días.",
     "privacyLink": "Aviso de privacidad",
+    "accessNeeded": "Hace falta un código de acceso para hacer preguntas. Usa el enlace que te dieron.",
     "credits": "Textos legales: Source: EUR-Lex, © European Union (solo la versión del Diario Oficial es auténtica; los textos consolidados carecen de efecto jurídico). Contains public sector information licensed under the Open Government Licence v3.0 (legislation.gov.uk). Fuente de los datos: Agencia Estatal Boletín Oficial del Estado (texto consolidado, de carácter meramente informativo). Los textos se han reformateado y dividido en pasajes; su significado no se ha modificado."
   }
 }
@@ -188,6 +190,19 @@
   }
   function stored() { try { return window.localStorage.getItem("lang"); } catch (e) { return null; } }
   function store(v) { try { window.localStorage.setItem("lang", v); } catch (e) { /* private mode: fine */ } }
+
+  // The invited visitor's link carries the access code in its fragment (https://host/#code=...). A browser never
+  // sends a fragment to a server, so the code is not in any log; it is kept for this tab only and sent in a header.
+  function readCode() { try { return window.sessionStorage.getItem("code"); } catch (e) { return null; } }
+  function keepCode(v) { try { window.sessionStorage.setItem("code", v); } catch (e) { /* private mode: fine */ } }
+  function takeCodeFromLink() {
+    var m = /(?:^#|&)code=([^&]+)/.exec(window.location.hash);
+    if (!m) return;
+    keepCode(decodeURIComponent(m[1]));
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+  takeCodeFromLink();
+  window.addEventListener("hashchange", takeCodeFromLink);  // a link pasted into a tab that is already open
 
   function updateCount() { count.textContent = box.value.length + "/1000"; }
 
@@ -217,7 +232,7 @@
     var kind = status === 200 ? data.kind : "error";
     card.appendChild(el("span", "badge " + kind, t.kinds[kind] || kind));
     if (status !== 200) {
-      var p = el("p", "", data.error || t.genericError);
+      var p = el("p", "", status === 401 ? t.accessNeeded : (data.error || t.genericError));
       p.setAttribute("role", "alert");
       card.appendChild(p);
     } else {
@@ -251,7 +266,9 @@
     statusEl.textContent = T[lang].searching; body.replaceChildren();
     // A host that scales to zero starts cold; after a few seconds say why the wait is long (announced, as the status line is).
     var waking = setTimeout(function () { statusEl.textContent = T[lang].waking; }, WAKING_AFTER_MS);
-    fetch("/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: question }) })
+    var headers = { "Content-Type": "application/json" };
+    if (readCode()) headers["X-Access-Code"] = readCode();
+    fetch("/ask", { method: "POST", headers: headers, body: JSON.stringify({ question: question }) })
       .then(function (r) { return r.json().then(function (d) { return [r.status, d]; }); })
       .then(function (pair) { render(pair[0], pair[1]); })
       .catch(function () { render(0, { error: T[lang].networkError }); })

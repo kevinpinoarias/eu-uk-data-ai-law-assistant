@@ -4,13 +4,13 @@ name: Deploy
 # vectors that Git does not hold, see scripts/make_data_bundle.py), pushes it to the GitHub container registry with
 # the workflow's own short-lived token, then points the Azure Container App at it. Signing in to Azure is keyless:
 # the repository proves who it is with a short-lived token (OIDC), so no password or key is stored anywhere.
-# The model key is set once in the Container App itself as a secret, never here and never in the image.
+# The model key and the access code are set once in the Container App itself as secrets, never here and never in
+# the image; this file only names them.
 #
-# One-time set-up (docs/DEPLOYMENT.md): an Azure app registration with a federated credential for this repository
-# on branch main, the Container App with minimum replicas 0, the repository variables AZURE_CLIENT_ID,
-# AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP and AZURE_CONTAINER_APP, a release that holds
-# data-bundle.zip, and the published package set to public so the app can pull it without a stored credential.
-# Not yet run: it needs those accounts.
+# One-time set-up: scripts/azure_setup.sh (run in Azure Cloud Shell), the five repository variables it prints
+# (AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, AZURE_CONTAINER_APP), a release
+# that holds data-bundle.zip, and the published package set to public after the first push so the app can pull it
+# without a stored credential (docs/DEPLOYMENT.md). Not yet run: it needs those accounts.
 
 on:
   workflow_dispatch:
@@ -67,11 +67,19 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      # Every deploy re-asserts the port, the replica limits and the two secret references, so an app that was set
+      # up carelessly by hand is corrected, and a deploy to an app without those secrets fails instead of going
+      # live open.
       - name: Point the app at the new image
         env:
           APP: ${{ vars.AZURE_CONTAINER_APP }}
           GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
-        run: az containerapp update --name "$APP" --resource-group "$GROUP" --image "$IMAGE:$GITHUB_SHA"
+        run: |
+          az containerapp ingress update --name "$APP" --resource-group "$GROUP" --target-port 8000
+          az containerapp update --name "$APP" --resource-group "$GROUP" \
+            --image "$IMAGE:$GITHUB_SHA" \
+            --min-replicas 0 --max-replicas 1 \
+            --set-env-vars GEMINI_API_KEY=secretref:gemini-key ACCESS_CODE=secretref:access-code
 
       - name: Wait for the app to answer (a cold start can take a minute)
         env:

@@ -89,6 +89,15 @@ Without a graphics card install the CPU build of PyTorch instead and expect slow
 
 **Optional: the answer layer.** It calls Google's Gemini API (`gemini-3.1-flash-lite`) for routing and for writing answers. Put `GEMINI_API_KEY` in `.env` (never commit it). The free tier allows about 500 requests a day for this model, which is enough for exploring but not for a full evaluation; the clients stop at once and say so when a quota is used up. To draw the pipeline as a LangGraph graph: `python -m pip install -e ".[agent]"`.
 
+## Privacy of the demo
+
+A data-protection assistant should hold as little as it can, so the demo is built to hold almost nothing (decision 121, notice at `/privacy`):
+
+- **What it sends away.** The question you type goes to Google's Gemini API to produce the answer, so please do not type personal data. The Gemini terms read at the start of the project require the paid tier for a public UK or EEA demo (the free tier may use content to improve Google's products); the development experiments used the free tier with the gold questions only, which contain no personal data. Re-read the current wording before any launch.
+- **What it keeps.** The server never reads or stores a visitor's address, and the logs hold no question text: a row has only the route, outcome, passage ids and timings, deleted after 30 days. Its limits count questions in total, not per visitor.
+- **Who can ask.** Setting `ACCESS_CODE` restricts questions to people who hold the invited link (`https://HOST/#code=...`; the part after `#` never reaches a server).
+- **What it does not control.** The host's own infrastructure (Microsoft Azure) sees connecting addresses and may keep its own logs. Whether the UK data-protection fee or an EU representative applies to the owner is not settled (decision 120).
+
 ## Disclaimer
 
 This project explains and cites public legal texts. It is not legal advice, it can be wrong or out of date, and it must not be used for decisions about real compliance. Check the official source.

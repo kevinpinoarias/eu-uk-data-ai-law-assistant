@@ -46,7 +46,7 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 
 ## 5.4 The container image (`Dockerfile`)
 
-**In this project.** An image that runs the service on a plain CPU: CPU-only PyTorch (much smaller than the default), the BGE-M3 weights (2.27 GB) downloaded at build time, the chunks (8 MB) and saved chunk vectors (51 MB) copied in, a health check, and `TRUST_PROXY=1` so the rate limit sees the visitor's address behind the host's proxy.
+**In this project.** An image that runs the service on a plain CPU: CPU-only PyTorch (much smaller than the default), the BGE-M3 weights (2.27 GB) downloaded at build time, the chunks (8 MB) and saved chunk vectors (51 MB) copied in, and a health check. (Changed 16 October, decision 121: the server no longer reads a visitor's address, so the earlier `TRUST_PROXY=1` setting is gone; the limits count questions in total.)
 **In general.** A container is a sealed folder that runs the same everywhere. Building it once and running that same image on your machine and in the cloud removes "it worked on mine".
 **The basics applied.** Measured: a question embeds in 0.12 s on an ordinary CPU; the built image is 1.74 GB, starts healthy in 10 s and uses 1.5 GiB of memory at rest. The first build failed at start-up because of an unpinned `transformers` version (fixed with a bound and a build-time import check). Verified against the real container: the page, `/health`, and the plain 503 for a used-up model allowance with a trace written. Not yet done: timing 20 uncached questions end to end, which needs the model's daily allowance.
 

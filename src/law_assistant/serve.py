@@ -7,14 +7,21 @@ A small web server for the demo page, using only the standard library: `python -
 - POST /ask      {"question": "..."} -> the answer JSON (see answer/service.py)
 
 `--demo` serves canned answers without loading any model or key, to check the page. `--port N` and `--host H`
-change the address (default 127.0.0.1:8000). Behind a proxy, set TRUST_PROXY=1 so the client address is read
-from X-Forwarded-For for the rate limit. Questions are logged (without addresses) to
-data/traces/traces.jsonl and deleted after TRACE_RETENTION_DAYS days (default 30), because a question can
-contain personal data.
+change the address (default 127.0.0.1:8000).
+
+What this server knows about a visitor: nothing. It never reads the connecting address (the limits count
+questions in total) and its request log has none; each question leaves a trace row with its route, timings and
+outcome but not its text (data/traces/traces.jsonl, deleted after TRACE_RETENTION_DAYS days, default 30).
+
+Asking a question can be restricted to people who hold an access code: set ACCESS_CODE, and the page sends it
+(from the link's fragment, which a browser never sends to a server) in the X-Access-Code header. The pages and
+the health check stay open. With no ACCESS_CODE the server answers anyone, which is right for a local run.
+The total limits are QUESTIONS_PER_MINUTE (default 10) and QUESTIONS_PER_DAY (default 300).
 """
 
 from __future__ import annotations
 
+import hmac
 import json
 import os
 import sys
@@ -64,7 +71,12 @@ def launch_blockers(notice: str | None = None) -> list[str]:
     return [name for name in PRIVACY_PLACEHOLDERS if name in text]
 
 
-def make_handler(service: AskService, trust_proxy: bool):
+def make_handler(service: AskService, access_code: str | None = None):
+    def allowed(supplied: str | None) -> bool:
+        if not access_code:
+            return True
+        return supplied is not None and hmac.compare_digest(supplied.encode(), access_code.encode())
+
     class Handler(BaseHTTPRequestHandler):
         def _send(self, status: int, body: bytes, content_type: str) -> None:
             self.send_response(status)
@@ -99,15 +111,20 @@ def make_handler(service: AskService, trust_proxy: bool):
             if not 0 < length <= MAX_BODY:
                 self._json(400, {"error": "Send a JSON body of up to 10 kilobytes."})
                 return
+            raw = self.rfile.read(
+                length
+            )  # read before any refusal: replying with unread data can reset the connection
+            if not allowed(self.headers.get("X-Access-Code")):
+                self._json(
+                    401, {"error": "An access code is needed to ask questions. Use the link you were given."}
+                )
+                return
             try:
-                payload = json.loads(self.rfile.read(length))
+                payload = json.loads(raw)
             except ValueError:
                 self._json(400, {"error": "The body is not valid JSON."})
                 return
-            client = self.client_address[0]
-            if trust_proxy:
-                client = self.headers.get("X-Forwarded-For", client).split(",")[0].strip()
-            status, body = service.ask(payload, client=client)
+            status, body = service.ask(payload)
             self._json(status, body)
 
         def log_message(self, format: str, *args) -> None:  # noqa: A002 (name fixed by the base class)
@@ -142,8 +159,18 @@ def main(argv: list[str]) -> int:
             f"public launch: {', '.join(blockers)}",
             file=sys.stderr,
         )
-    service = AskService(pipeline, trace=trace, limiter=RateLimiter())
-    handler = make_handler(service, trust_proxy=os.environ.get("TRUST_PROXY") == "1")
+    limiter = RateLimiter(
+        per_minute=int(os.environ.get("QUESTIONS_PER_MINUTE", "10")),
+        per_day=int(os.environ.get("QUESTIONS_PER_DAY", "300")),
+    )
+    service = AskService(pipeline, trace=trace, limiter=limiter)
+    access_code = os.environ.get("ACCESS_CODE") or None
+    if access_code is None:
+        print(
+            "NOTE: ACCESS_CODE is not set, so anyone who finds this server can ask questions.",
+            file=sys.stderr,
+        )
+    handler = make_handler(service, access_code=access_code)
     with ThreadingHTTPServer((host, port), handler) as server:
         print(f"serving on http://{host}:{port}  (demo mode: {'--demo' in argv})")
         server.serve_forever()

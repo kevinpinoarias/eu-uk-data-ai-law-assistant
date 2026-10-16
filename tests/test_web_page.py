@@ -82,6 +82,24 @@ def test_the_result_area_is_announced_and_errors_are_alerts():
     assert 'setAttribute("role", "alert")' in PAGE  # the error paragraph is created by the script
 
 
+def test_the_page_takes_an_access_code_from_the_link_fragment_and_sends_it_in_a_header():
+    # An invited visitor's link is https://host/#code=...; a fragment is never sent to a server.
+    d = dictionary()
+    assert d["en"]["accessNeeded"] and d["es"]["accessNeeded"]
+    assert "access code" in d["en"]["accessNeeded"].lower() and "código" in d["es"]["accessNeeded"]
+    script = PAGE.split("<script>")[-1]
+    assert "window.location.hash" in script and "sessionStorage" in script and "X-Access-Code" in script
+    assert "replaceState" in script  # the code is taken out of the address bar and the history
+    assert "status === 401" in script  # a refused visitor sees the plain message, in their language
+
+
+def test_the_footer_says_the_question_text_and_the_address_are_not_kept():
+    for lang in ("en", "es"):
+        text = dictionary()[lang]["privacy"]
+        assert "30" in text and ("not kept" in text or "no se conserva" in text)
+        assert "logged without your address" not in text
+
+
 def test_the_footer_carries_each_publisher_s_required_credit_in_both_languages():
     # SOURCES.md lists the credit line each publisher requires; the page shows the texts, so it shows the credits.
     d = dictionary()

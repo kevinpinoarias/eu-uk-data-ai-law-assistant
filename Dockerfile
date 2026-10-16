@@ -29,8 +29,8 @@ COPY facts ./facts
 COPY data/chunks ./data/chunks
 COPY data/indexes/bge-m3.f32 data/indexes/bge-m3.keys.json ./data/indexes/
 
-# Behind a hosting platform's proxy the client address comes from X-Forwarded-For (used by the rate limit).
-ENV TRUST_PROXY=1
+# The server never reads a visitor's address. Set ACCESS_CODE (a host secret, never in the image) to restrict
+# questions to people holding the link; QUESTIONS_PER_MINUTE and QUESTIONS_PER_DAY set the total limits.
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
 CMD ["python", "-m", "law_assistant.serve", "--host", "0.0.0.0", "--port", "8000"]

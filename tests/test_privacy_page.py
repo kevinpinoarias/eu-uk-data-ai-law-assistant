@@ -62,22 +62,46 @@ def test_the_notice_names_the_owner_the_place_a_contact_address_and_the_uk_regul
 
 
 # What the notice tells the reader is kept, in the code's field names. Anything else in a row is a change that
-# the notice must be updated for first.
+# the notice must be updated for first. The text of the question is deliberately not among them.
 DECLARED_FIELDS = {
-    "ts", "question", "language", "route", "passages", "timings", "seconds", "kind", "reason",
+    "ts", "language", "route", "passages", "timings", "seconds", "kind", "reason",
     "fact_key", "invalid_citations", "error",
 }  # fmt: skip
 
 
-def test_a_real_trace_row_holds_only_declared_fields_and_never_the_client_address(tmp_path):
+def test_a_real_trace_row_holds_only_declared_fields_and_never_the_question_text(tmp_path):
     log = tmp_path / "traces.jsonl"
     service = AskService(DemoPipeline(), trace=TraceLog(log), limiter=RateLimiter())
-    status, _ = service.ask({"question": "What is the highest fine?"}, client="203.0.113.77")
+    status, _ = service.ask({"question": "What is the highest fine? I am Ana Pérez."})
     assert status == 200
     text = log.read_text(encoding="utf-8")
-    assert "203.0.113.77" not in text
+    assert "Ana" not in text and "highest fine" not in text
     row = json.loads(text.splitlines()[0])
     assert set(row) <= DECLARED_FIELDS, set(row) - DECLARED_FIELDS
+
+
+def cells(lang: str) -> tuple[str, str]:
+    kept, not_kept = re.findall(r"<td>(.*?)</td>", section(lang), re.DOTALL)
+    return kept, not_kept
+
+
+def test_the_notice_says_the_text_of_a_question_is_not_kept_in_both_languages():
+    kept, not_kept = cells("en")
+    assert "text of your question" not in kept and "text of your question" in not_kept
+    kept, not_kept = cells("es")
+    assert "texto de tu pregunta" not in kept and "texto de tu pregunta" in not_kept
+
+
+def test_the_notice_no_longer_claims_to_hold_an_address_and_is_honest_about_the_host_and_the_code():
+    en, es = section("en").lower(), section("es").lower()
+    assert "in its memory only" not in en and "solo en su memoria" not in es
+    assert "never reads or stores" in en and "nunca lee ni guarda" in es
+    assert "access code" in en and "código de acceso" in es
+    assert "technical logs" in en and "registros técnicos" in es  # the host may keep its own
+    assert (
+        "microsoft" in en and "azure" in en and "microsoft" in es and "azure" in es
+    )  # the host (decision 123)
+    assert "cloud run" not in en and "cloud run" not in es
 
 
 def test_the_notice_names_the_recipients_and_the_rights():

@@ -1,15 +1,16 @@
 """
-The service layer: what a web page or an API call talks to. It checks the input, limits how often one
-client and all clients together may ask (every question costs model calls, which cost money or free-tier
-allowance), runs the pipeline, turns the result into JSON, and writes a trace. It knows nothing about HTTP,
-so the same code can sit behind the standard-library server in `serve.py` or a framework later.
+The service layer: what a web page or an API call talks to. It checks the input, limits how many questions
+may be asked in total (every question costs model calls, which cost money or free-tier allowance), runs the
+pipeline, turns the result into JSON, and writes a trace. It knows nothing about HTTP, and nothing about who
+is asking: it is never given a visitor's address, so it cannot hold one, and the trace holds no question text.
+The same code can sit behind the standard-library server in `serve.py` or a framework later.
 """
 
 from __future__ import annotations
 
 import threading
 import time
-from collections import defaultdict, deque
+from collections import deque
 from collections.abc import Callable
 from typing import Any
 
@@ -20,30 +21,31 @@ MAX_QUESTION_CHARS = 1000
 
 
 class RateLimiter:
-    """At most `per_minute` questions per client in any 60 seconds and `per_day` from everyone in 24 hours."""
+    """A hard limit on the whole service: at most `per_minute` questions in any 60 seconds and `per_day` in
+    24 hours, counted in total. Nothing identifies a visitor, so one visitor can use up the allowance for
+    everyone; for a demo shown to a few invited people that is the right trade for holding no addresses."""
 
     def __init__(
-        self, *, per_minute: int = 6, per_day: int = 300, clock: Callable[[], float] = time.monotonic
+        self, *, per_minute: int = 10, per_day: int = 300, clock: Callable[[], float] = time.monotonic
     ) -> None:
         self._per_minute, self._per_day, self._clock = per_minute, per_day, clock
-        self._by_client: dict[str, deque[float]] = defaultdict(deque)
+        self._recent: deque[float] = deque()
         self._day: deque[float] = deque()
         self._lock = threading.Lock()
 
-    def check(self, client: str) -> str | None:
+    def check(self) -> str | None:
         """Reserve a place and return None, or return why the question must wait."""
         now = self._clock()
         with self._lock:
-            recent = self._by_client[client]
-            while recent and now - recent[0] >= 60:
-                recent.popleft()
+            while self._recent and now - self._recent[0] >= 60:
+                self._recent.popleft()
             while self._day and now - self._day[0] >= 86400:
                 self._day.popleft()
             if len(self._day) >= self._per_day:
                 return "The limit of questions for today has been reached; please try again tomorrow."
-            if len(recent) >= self._per_minute:
+            if len(self._recent) >= self._per_minute:
                 return "Too many questions in a minute; please wait a moment and try again."
-            recent.append(now)
+            self._recent.append(now)
             self._day.append(now)
             return None
 
@@ -54,32 +56,31 @@ class AskService:
     ) -> None:
         self._pipeline, self._trace, self._limiter = pipeline, trace, limiter or RateLimiter()
 
-    def ask(self, payload: Any, *, client: str) -> tuple[int, dict[str, Any]]:
+    def ask(self, payload: Any) -> tuple[int, dict[str, Any]]:
         question = payload.get("question") if isinstance(payload, dict) else None
         if not isinstance(question, str) or not question.strip():
             return 400, {"error": "Send a JSON object with a non-empty 'question'."}
         question = question.strip()
         if len(question) > MAX_QUESTION_CHARS:
             return 400, {"error": f"The question is too long (at most {MAX_QUESTION_CHARS} characters)."}
-        wait = self._limiter.check(client)
+        wait = self._limiter.check()
         if wait:
             return 429, {"error": wait}
         try:
             result = self._pipeline.ask(question)
         except LLMError as error:
-            self._record({"question": question, "kind": "error", "error": "LLMError"})
+            self._record({"kind": "error", "error": "LLMError"})
             if "quota" in str(error):
                 return 503, {
                     "error": "The assistant's model allowance is used up for now; please try again later."
                 }
             return 500, {"error": "Something went wrong while answering. Please try again later."}
         except Exception as error:  # the details stay in the trace; the user sees a plain message
-            self._record({"question": question, "kind": "error", "error": type(error).__name__})
+            self._record({"kind": "error", "error": type(error).__name__})
             return 500, {"error": "Something went wrong while answering. Please try again later."}
         seconds = round(sum(result.timings.values()), 3)
         self._record(
             {
-                "question": question,
                 "kind": result.kind,
                 "route": result.trace.get("route"),
                 "reason": result.reason,
