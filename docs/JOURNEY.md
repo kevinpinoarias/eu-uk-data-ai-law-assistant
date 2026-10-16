@@ -189,6 +189,13 @@ The rule behind everything: **never trust a stage because it looks right; test i
 **The useful accident.** The "false alarms" pointed at a real hole in the system: the answer writer was never shown the in-force date, which is why two development questions were declined or judged incomplete. An option now shows it; it is measured with the version-aware search when the model's daily allowance allows (decision 98).
 **The lesson.** An independent reviewer can only judge what it is shown. When a reviewer says "the date is not in the text", either the gold is wrong or the evidence the system uses is not what the reviewer saw; here it was the second, and it improved the system. Details: `GOLD_REVIEW_2.md`.
 
+## The privacy notice, and keeping a promise in code
+
+**The idea.** A data-protection assistant that logs what people type is processing personal data itself. Saying "deleted after 30 days" on the page is a promise; a promise is only worth something if the code keeps it and a test would notice if it stopped.
+**What we did.** Wrote the notice in English and Spanish (`/privacy`): who is responsible, what is kept (the question, language, route, passage ids, timings, outcome) and what is not (address, accounts, cookies, analytics), the purpose and basis (legitimate interests), 30 days, recipients (Google's Gemini API and the host), the warning not to type personal data, the rights and how to use them with no account, and where to complain. Tests tie it to the code: the retention number equals the constant the log uses, a real trace row holds only listed fields and never the client address, and exactly four owner details are left as placeholders. The server warns at start-up while they remain.
+**What we found while writing it.** Old questions were deleted only when the server started, so a server running for months would have kept them far past 30 days. The log now deletes them itself, at most once an hour.
+**What it cannot replace.** The owner's own details and a check of the statements about transfers and the host's logs against the real hosting set-up. It is a draft by an AI assistant, not legal advice. The lawyer's review of the gold set was dropped from the plans (decision 108); the "not reviewed by a lawyer" label stays.
+
 ## Why each major choice, in one place
 
 | Choice | Why | What showed it |

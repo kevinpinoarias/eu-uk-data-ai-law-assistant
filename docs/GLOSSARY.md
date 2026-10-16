@@ -111,3 +111,11 @@ Alphabetical. Each entry says what the thing is, then how it shows up in this pr
 **Instruction prefix (for an embedding model).** A short sentence placed in front of a question telling the model what the search is for ("Given a question about EU, UK or Spanish data protection or AI law, retrieve the legal provisions that answer it"). Some models need it for questions and not for passages. Here it did not help.
 
 **Ensemble.** Using two models together (here by reciprocal rank fusion) because they make different mistakes. R4.3: 0.58 against 0.53, not detectable.
+
+**Screen reader.** Software that reads a web page aloud (or to a braille display) for people who are blind or have low vision. It reads the page's structure (headings, labels, buttons, lists), in order, driven from the keyboard. Automated tests can prove the parts exist, not that the page sounds sensible. Free example on Windows: NVDA. (`ACCESSIBILITY_CHECKLIST.md`)
+
+**Privacy notice.** The plain statement, owed to the people whose data you handle, of who is responsible, what is kept, why, for how long, who receives it, and what rights they have. Here it is `web/privacy.html`, in English and Spanish, and tests tie its numbers to the code. (`PHASE5_PLAN.md` 5.2)
+
+**Retention period.** How long data is kept before it is deleted. Here 30 days for logged questions, enforced by the log itself (it deletes old rows at most once an hour), so a server that never restarts still keeps the promise.
+
+**Legitimate interests.** One of the lawful bases in Article 6(1) of the GDPR: processing is allowed when it is needed for a real interest of the operator (here, running, securing and improving a free demo) and does not override the person's rights. It has to be weighed and the person can object. The notice states it as the basis; the owner confirms it.

@@ -161,3 +161,28 @@ def test_any_other_model_error_stays_a_generic_500():
 
     svc, _ = service(FakePipeline(error=LLMError("HTTP 400: bad request")))
     assert svc.ask({"question": "q"}, client="c")[0] == 500
+
+
+def test_a_running_log_deletes_old_traces_by_itself_at_most_once_an_hour(tmp_path):
+    from datetime import UTC, datetime, timedelta
+
+    from law_assistant.answer.trace import DEFAULT_RETENTION_DAYS
+
+    assert DEFAULT_RETENTION_DAYS == 30
+    now = [datetime(2026, 10, 15, 12, 0, tzinfo=UTC)]
+    path = tmp_path / "t.jsonl"
+    old = {"ts": (now[0] - timedelta(days=45)).isoformat(), "question": "old"}
+    path.write_text(json.dumps(old) + "\n", encoding="utf-8")
+    log = TraceLog(path, retention_days=30, clock=lambda: now[0])
+    log.record({"question": "first"})  # the first write prunes: the old row goes
+    assert [json.loads(line)["question"] for line in path.read_text(encoding="utf-8").splitlines()] == [
+        "first"
+    ]
+    path.write_text(path.read_text(encoding="utf-8") + json.dumps(old) + "\n", encoding="utf-8")
+    now[0] += timedelta(minutes=30)
+    log.record({"question": "second"})  # less than an hour since the last prune: nothing is deleted yet
+    assert len(path.read_text(encoding="utf-8").splitlines()) == 3
+    now[0] += timedelta(hours=2)
+    log.record({"question": "third"})  # more than an hour: the old row goes again
+    questions = [json.loads(line)["question"] for line in path.read_text(encoding="utf-8").splitlines()]
+    assert "old" not in questions and questions[-1] == "third"

@@ -833,3 +833,44 @@ Recall@5 by question type (R4.1, R4.2, R4.2b, R4.3; number of questions):
 **What the numbers do show.** The two models are about equally good and make different mistakes: the fusion improves lookups (0.75 to 0.88) and English questions (0.51 to 0.63) and ties or loses elsewhere. That is the usual reason to ensemble two retrievers. With 31 questions a gain of this size cannot be told from luck, and it costs a second model on every question and a second 17-minute chunk embedding (BGE-M3 took about 5), so I do not adopt it; it stays an open candidate that would need its own pre-registration and its own read of the test half (and the test half's retrieval read has already been spent on the BGE-M3 decision).
 
 **Cost and speed.** Embedding the 3,831 chunks on the GTX 1060 took 1,044 s (BGE-M3 about 300 s). One question embeds in 52 ms. Only 1 chunk of 3,831 is longer than the 1,024-token limit (mean 346 tokens with this tokenizer). A file-naming quirk: because the model name contains a dot, the saved vectors are in `data/indexes/qwen3-embedding-0.f32` (the code replaces the text after the last dot); save and load agree, so nothing breaks, but the name is misleading.
+
+
+## P4.5 version-aware search, dev half, run 2026-10-16 (commit a8851ac; gold fingerprint 8c91df9a)
+
+### P4.5 version-aware search (31 development retrieve questions)
+
+- A correctness 0.68 (0.53 to 0.82); D correctness 0.68 (0.55 to 0.79)
+- D against A: difference +0.000, 95 % interval -0.097 to +0.097
+
+Questions whose search or verdict changed (id, A verdict, D verdict, D passages):
+
+- q003 (lookup, as_of None): A yes (answer), D partly (answer); D searched ['as first published in the Official Journal', 'consolidated text of 4 May 2016', 'text in force on 14 October 2026']
+- q014 (definition, as_of None): A no (abstained), D partly (answer); D searched ['as first published in the Official Journal', 'consolidated text of 4 May 2016', 'text in force on 14 October 2026']
+- q028 (comparison, as_of None): A no (answer), D partly (answer); D searched ['as first published in the Official Journal', 'consolidated text of 27 July 2026', 'text in force on 14 October 2026']
+- q030 (comparison, as_of None): A yes (answer), D partly (answer); D searched ['as first published in the Official Journal', 'text in force on 14 October 2026']
+- q032 (comparison, as_of None): A yes (answer), D partly (answer); D searched ['text in force on 14 October 2026']
+- q044 (as_of, as_of 2026-01-01): A yes (answer), D partly (answer); D searched ['as first published in the Official Journal']
+- q048 (as_of, as_of 2026-10-14): A no (answer), D partly (answer); D searched ['as first published in the Official Journal', 'text in force on 14 October 2026']
+- q051 (as_of, as_of 2026-10-14): A partly (answer), D yes (answer); D searched ['text in force on 14 October 2026']
+
+Answers of D to the questions whose search changed:
+
+**q044** As of the start of 2026, when were the AI Act's rules for high-risk AI systems due to start applying?
+
+The AI Act generally applies from 2 August 2026. This date applies to the regulation as a whole, which includes the rules for high-risk AI systems. There are specific exceptions for certain high-risk systems used by public authorities, which must comply by 2 August 2030, and those that are components of large-scale IT systems, which must comply by the end of 2030.
+(judge: partly: The answer fails to distinguish between the different application dates for high-risk systems under the original text (Annex III vs. Annex I) and incorrectly implies that all high-risk systems apply from August 2026 without noting the specific product-safety route delay.)
+
+**q048** In the GDPR as first published in the Official Journal, how was the third trigger for appointing a data protection officer worded, and how does the current consolidated text word it?
+
+In the GDPR as first published in the Official Journal, the third trigger for appointing a data protection officer (Article 37(1)(c)) requires designation when core activities involve large-scale processing of special categories of data (Article 9) and personal data relating to criminal convictions and offences (Article 10). The provided passages do not contain a consolidated text of the GDPR, so it is not possible to compare this with the current wording.
+(judge: partly: The answer correctly identifies the original wording but fails to mention the current consolidated text's use of 'or' as requested.)
+
+## Reading P4.5, version-aware search and in-force dates (16 October 2026)
+
+**Result: no gain; configuration A (the plain pipeline) goes to the test half.** Correctness on the 31 development retrieval questions is 0.68 for both A and D (difference +0.000, interval -0.097 to +0.097).
+
+**The pre-registered rule, applied as written.** D is confirmed only if (1) no development question judged `yes` under A is judged anything else under D, and (2) at least one of q044, q048, q049, q051 improves on my reading. Condition 1 **fails**: q003, q030, q032 and q044 were `yes` under A and are `partly` under D. Condition 2 would have held on one question (q051 went from `partly` to `yes`), but the rule needs both, so D is not chosen.
+
+**What moved, honestly.** Eight questions changed verdict: one clear improvement (q051), four `yes` to `partly`, and three `no` to `partly` (q014, q028, q048). Because the judge is a language model of the writer's family and was found too generous before, I do not read the four losses as proof that D is worse, nor the three `no` to `partly` as proof it is better. What I can read in the answers: q044 (as of the start of 2026, when do the high-risk rules apply?) still says 2 August 2026 for the whole Act, so showing the in-force dates did not by itself fix the anachronism; q048 (the GDPR's third DPO trigger as first published and now) searched both versions but the passages for the current text did not reach the writer, so it answered the original wording and said it could not compare. The repair needs better retrieval of the second version, not only more dates in the prompt.
+
+**Consequences.** The version-aware option and the dates stay in the code as options (off by default) with this result recorded as a failed repair; the as-of questions remain a known weak spot (as_of recall@5 is 0.40 in all four embedding variants of R4.1 to R4.3, n = 5). The test half is read once, for A (`experiments/p4_test_confirmation.py --config A --log`).

@@ -24,8 +24,7 @@ Then update `EXPERIMENT_INDEX.md`, the README results table and `DECISIONS.md`, 
 
 1. **Measure version-aware search and in-force dates** (text as first published for questions dated before the 2026 amendment; each passage's 'in force from' date shown to the writer). Built and unit-tested; the measurement needs one day's allowance of the model's free tier, and the answer-layer results must be re-run under gold version 2.
 2. **Read the 40 test questions once**, for the chosen configuration, against the baselines. About 250 model calls. Whatever comes out is reported, including a failure.
-3. **A lawyer's review of the gold set**, if one is willing. The second round of AI review is done (version 2, `GOLD_REVIEW_2.md`).
-4. **Phase 5, shipping.** Built: a service layer with a rate limit and a trace of every question, a web server and a one-page interface (checked in a browser), a command-line question, and a Dockerfile (not yet built). Left: billing and a budget alert, building and measuring the image, a hosting account, and a deployment workflow. The full plan, step by step, is in [PHASE5_PLAN.md](PHASE5_PLAN.md); measurements and the open choice of embedding source are in [DEPLOYMENT.md](DEPLOYMENT.md).
+3. **Phase 5, shipping.** Built: a service layer with a rate limit and a trace of every question, a web server and a bilingual one-page interface (checked in a browser), a privacy notice in both languages (owner details still to fill in: four placeholders, and the server warns while any remain), a command-line question, and a container image (built and run). Left: billing and a budget alert, rebuilding the image, a hosting account, a deployment workflow, and a screen-reader pass ([ACCESSIBILITY_CHECKLIST.md](ACCESSIBILITY_CHECKLIST.md)). The full plan, step by step, is in [PHASE5_PLAN.md](PHASE5_PLAN.md); measurements and the open choice of embedding source are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## If time allows
 
@@ -42,7 +41,7 @@ Then update `EXPERIMENT_INDEX.md`, the README results table and `DECISIONS.md`, 
 
 ## Known limits
 
-- The gold set was drafted by an AI assistant, checked by scripts and AI reviews, and has **not been reviewed by a lawyer**.
+- The gold set was drafted by an AI assistant, checked by scripts and AI reviews, and has **not been reviewed by a lawyer**. A lawyer's review is not planned (decision 108); the label stays on the set, the page and the write-ups instead.
 - All results so far are on the 31 development retrieval questions, so only large differences are detectable.
 - The judge that grades answers is a language model of the same family as the writer; a person read a sample of 12 verdicts and found it too generous on two.
 - The free tier of the answer model limits how many experiments can run in a day.

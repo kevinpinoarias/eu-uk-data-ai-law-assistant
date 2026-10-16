@@ -73,6 +73,12 @@ def run(port: int | None = None, startup_seconds: float = 40.0) -> list[str]:
             "the page carries the disclaimer in both languages",
             b"Not legal advice" in page and b"No es asesoramiento" in page,
         )
+        status, privacy = call(f"{base}/privacy")
+        check(
+            "the privacy notice is served in both languages",
+            status == 200 and b"Privacy notice" in privacy and b"Aviso de privacidad" in privacy,
+        )
+        check("the page links to the privacy notice", b'href="/privacy"' in page)
         status, body = call(f"{base}/ask", {"question": "What is the highest fine?"})
         answer = json.loads(body) if status == 200 else {}
         check(

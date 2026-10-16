@@ -2,6 +2,7 @@
 A small web server for the demo page, using only the standard library: `python -m law_assistant.serve`.
 
 - GET /          the one-page interface (web/index.html)
+- GET /privacy   the privacy notice (web/privacy.html, English and Spanish)
 - GET /health    {"ok": true}, for a hosting platform's health check
 - POST /ask      {"question": "..."} -> the answer JSON (see answer/service.py)
 
@@ -23,9 +24,12 @@ from pathlib import Path
 from law_assistant import settings
 from law_assistant.answer.pipeline import Result, Source
 from law_assistant.answer.service import AskService, RateLimiter
-from law_assistant.answer.trace import TraceLog
+from law_assistant.answer.trace import DEFAULT_RETENTION_DAYS, TraceLog
 
 PAGE = settings.PROJECT_ROOT / "web" / "index.html"
+PRIVACY_PAGE = settings.PROJECT_ROOT / "web" / "privacy.html"
+# Details only the owner can supply; the notice must not go public while any of them is still a placeholder.
+PRIVACY_PLACEHOLDERS = ("[OWNER NAME]", "[CITY, COUNTRY]", "[CONTACT EMAIL]", "[HOSTING PROVIDER]")
 MAX_BODY = 10_000
 HEADERS = {
     "X-Content-Type-Options": "nosniff",
@@ -54,6 +58,12 @@ class DemoPipeline:
         return Result(kind, text, "es" if spanish else "en", route, sources=sources, timings={"demo": 0.01})
 
 
+def launch_blockers(notice: str | None = None) -> list[str]:
+    """Placeholders still present in the privacy notice (empty when it is ready to publish)."""
+    text = PRIVACY_PAGE.read_text(encoding="utf-8") if notice is None else notice
+    return [name for name in PRIVACY_PLACEHOLDERS if name in text]
+
+
 def make_handler(service: AskService, trust_proxy: bool):
     class Handler(BaseHTTPRequestHandler):
         def _send(self, status: int, body: bytes, content_type: str) -> None:
@@ -73,6 +83,8 @@ def make_handler(service: AskService, trust_proxy: bool):
                 self._json(200, {"ok": True})
             elif self.path in ("/", "/index.html"):
                 self._send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
+            elif self.path == "/privacy":
+                self._send(200, PRIVACY_PAGE.read_bytes(), "text/html; charset=utf-8")
             else:
                 self._json(404, {"error": "Not found."})
 
@@ -117,10 +129,19 @@ def main(argv: list[str]) -> int:
         pipeline, _ = build_pipeline(
             version_aware="--version-aware" in argv, include_dates="--with-dates" in argv
         )
-    trace = TraceLog(Path(settings.PROJECT_ROOT / "data" / "traces" / "traces.jsonl"))
-    removed = trace.prune(days=int(os.environ.get("TRACE_RETENTION_DAYS", "30")))
+    retention = int(os.environ.get("TRACE_RETENTION_DAYS", str(DEFAULT_RETENTION_DAYS)))
+    trace = TraceLog(
+        Path(settings.PROJECT_ROOT / "data" / "traces" / "traces.jsonl"), retention_days=retention
+    )
+    removed = trace.prune(days=retention)
     if removed:
         print(f"deleted {removed} traces older than the retention period")
+    if blockers := launch_blockers():
+        print(
+            "WARNING: the privacy notice (web/privacy.html) still has placeholders to fill in before a "
+            f"public launch: {', '.join(blockers)}",
+            file=sys.stderr,
+        )
     service = AskService(pipeline, trace=trace, limiter=RateLimiter())
     handler = make_handler(service, trust_proxy=os.environ.get("TRUST_PROXY") == "1")
     with ThreadingHTTPServer((host, port), handler) as server:

@@ -38,6 +38,7 @@ Find the claim in `EXPERIMENT_INDEX.md` (one row per experiment, with the result
 | `PHASE4_PLAN.md` | What was the plan for the answer layer? |
 | `HOW_THE_ANSWER_LAYER_WORKS.md` | How does each answer-layer step work and what did it measure? |
 | `PHASE5_PLAN.md` | How is the demo shipped: privacy, cost, container, checks, failures? |
+| `ACCESSIBILITY_CHECKLIST.md` | What is a screen reader, and how do I test the page with one in ten minutes? |
 | `DEPLOYMENT.md` | What was measured for deployment and what choice is still open? |
 
 Also in the repository: `eval/gold/` (the questions and the manifest with their fingerprints), `eval/rewrites/` (the question rewrites and who wrote them), `facts/` (the exact-figure table), `experiments/` (every experiment script with its pre-registration), `tests/` (about 650 automated checks), `scripts/` (small tools such as the chronology generator). Not in the repository, by design: the private interview-preparation material.

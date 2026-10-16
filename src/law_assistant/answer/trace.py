@@ -10,17 +10,40 @@ from __future__ import annotations
 
 import json
 import threading
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+DEFAULT_RETENTION_DAYS = 30  # the privacy notice says 30 days; a test ties the two together
+PRUNE_EVERY = timedelta(hours=1)
+
 
 class TraceLog:
-    def __init__(self, path: Path) -> None:
+    """Appends one JSON line per question. With `retention_days` set, rows older than that are deleted by the
+    log itself (at the first write and then at most once an hour), so a server that never restarts still
+    keeps its promise about how long questions are kept."""
+
+    def __init__(
+        self,
+        path: Path,
+        *,
+        retention_days: int | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
         self._path, self._lock = path, threading.Lock()
+        self._retention_days = retention_days
+        self._clock = clock or (lambda: datetime.now(UTC))
+        self._last_prune: datetime | None = None
 
     def record(self, row: dict[str, Any]) -> None:
-        row = {"ts": datetime.now(UTC).isoformat(timespec="seconds"), **row}
+        now = self._clock()
+        if self._retention_days is not None and (
+            self._last_prune is None or now - self._last_prune >= PRUNE_EVERY
+        ):
+            self.prune(days=self._retention_days, now=now)
+            self._last_prune = now
+        row = {"ts": now.isoformat(timespec="seconds"), **row}
         line = json.dumps(row, ensure_ascii=False, default=str)
         with self._lock:
             self._path.parent.mkdir(parents=True, exist_ok=True)

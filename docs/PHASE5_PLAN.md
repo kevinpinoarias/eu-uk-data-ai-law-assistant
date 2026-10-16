@@ -16,7 +16,7 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 | Step | State |
 |---|---|
 | 5.1 Service layer | Built and tested |
-| 5.2 Privacy of the demo | Retention and warning built; notice and legal basis to decide |
+| 5.2 Privacy of the demo | Retention, warning and a bilingual notice built; four owner details to fill in |
 | 5.3 Web page | Built in English and Spanish, accessibility enforced by tests, checked in a browser |
 | 5.4 Container image | Built and run; healthy in 10 s, 1.5 GiB; model-key run pending |
 | 5.5 Continuous integration | Lint, tests, secret scan and a smoke test of the real server on a minimal install |
@@ -36,13 +36,13 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 
 **In this project.** The irony is worth saying out loud: a data-protection assistant that logs what people type is processing personal data, because people paste real situations ("my employer fired me on 3 May, my name is..."). So the demo does four things: it never stores the visitor's address; it asks visitors not to type personal data (on the page); it deletes traces after 30 days (`TRACE_RETENTION_DAYS`, tested); and it says on the page that questions are logged and why.
 **In general.** The same rules the assistant explains apply to its own operator: collect little, say what and why, keep it briefly, and be able to delete it.
-**The basics applied, and what is still open.** A fuller privacy notice (who runs it, what is logged, for how long, how to ask for deletion, the lawful basis) must be written by a person who can take that responsibility; I can draft it but it is not legal advice and I would not publish it for you. Also, the questions go to Google's API: from my reading of Google's terms on 13 October 2026, content sent on the **free tier may be used to improve Google's products**, and the terms require paid services for apps available to users in the EEA, Switzerland and the UK. A public demo should therefore use a billing-enabled key, not the free tier, and the page should say that questions are processed by Google. (Re-read the terms before launch; they change.)
+**The basics applied, and what is still open.** **Update, 16 October 2026 (decisions 108 to 110).** The notice is drafted in English and Spanish at `/privacy` (`web/privacy.html`), linked from the page footer: who is responsible, what the service does with a question, what is and is not kept, the purpose and the basis (legitimate interests, Article 6(1)(f)), 30 days of retention, recipients (Google, the host), the warning not to type personal data, the rights and how to exercise them without an account, and the complaint routes. Tests tie it to the code: the retention number equals the one the log enforces, a real trace row holds only the fields the notice lists and never the address, and the only placeholders left are `[OWNER NAME]`, `[CITY, COUNTRY]`, `[CONTACT EMAIL]` and `[HOSTING PROVIDER]`. The server prints a warning at start-up while any remain. It is a draft by an AI assistant, not legal advice and not reviewed by a lawyer; the owner takes responsibility for it by filling in those four details and by checking the statements about transfers and the host's own logs against the real hosting set-up. Original note: a fuller privacy notice (who runs it, what is logged, for how long, how to ask for deletion, the lawful basis) must be published by a person who can take that responsibility. Also, the questions go to Google's API: from my reading of Google's terms on 13 October 2026, content sent on the **free tier may be used to improve Google's products**, and the terms require paid services for apps available to users in the EEA, Switzerland and the UK. A public demo should therefore use a billing-enabled key, not the free tier, and the page should say that questions are processed by Google. (Re-read the terms before launch; they change.)
 
 ## 5.3 The web page (`web/index.html`)
 
 **In this project.** One file, no outside libraries, no tracking: a question box, four example questions (English, Spanish, an exact figure, an out-of-scope one), a result card with a label (answer, exact figure, not answered, not enough evidence), the sources with their quotations, the disclaimer, and a link to the repository.
 **In general.** For a demo the page matters less than the three things it must get right: say clearly what the tool is and is not, show where an answer came from, and work on a phone.
-**The basics applied.** Checked in a browser at desktop and phone width and in dark mode, no console errors; text is inserted with `textContent` (never as HTML) so an answer cannot inject markup; a security header restricts what the page may load. **Spanish and accessibility (decisions 104 and 105).** The page now has a full Spanish interface with a language switch (it remembers the choice and defaults to the browser's language), checked in a real browser. Accessibility is enforced by tests: every control labelled, a skip link, the text box described, results announced politely and errors as alerts, focus moved to the result, and every text and background colour pair at WCAG AA contrast in both themes (lowest 6.2:1 light, 7.0:1 dark). Still open: a pass with a real screen reader, which no test replaces.
+**The basics applied.** Checked in a browser at desktop and phone width and in dark mode, no console errors; text is inserted with `textContent` (never as HTML) so an answer cannot inject markup; a security header restricts what the page may load. **Spanish and accessibility (decisions 104 and 105).** The page now has a full Spanish interface with a language switch (it remembers the choice and defaults to the browser's language), checked in a real browser. Accessibility is enforced by tests: every control labelled, a skip link, the text box described, results announced politely and errors as alerts, focus moved to the result, and every text and background colour pair at WCAG AA contrast in both themes (lowest 6.2:1 light, 7.0:1 dark). Still open: a pass with a real screen reader, which no test replaces; a ten-step checklist for it is in [ACCESSIBILITY_CHECKLIST.md](ACCESSIBILITY_CHECKLIST.md).
 
 ## 5.4 The container image (`Dockerfile`)
 
@@ -85,7 +85,7 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 1. The image builds, starts, and answers 20 different questions with the key supplied only as a hosting secret (not in the image or the repository).
 2. The test half has been read once and its numbers are in the README **before** the live link is, so the demo and the reported numbers are the same system.
 3. A budget alert exists and the daily cap is set from the measured cost.
-4. A privacy notice written by a person is on the page; traces are deleted after 30 days.
+4. The privacy notice is on the page with the four owner details filled in (no start-up warning); traces are deleted after 30 days.
 5. The trace report shows median and 95th-percentile latency from real use.
 6. A short runbook says how to take it down (set the daily cap to zero or scale to zero).
 
@@ -96,7 +96,7 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 | Billing and budget alert on the Gemini project | yes | compute cost and caps afterwards |
 | Hosting account (card and phone verification) | yes | write the workflow and the setup notes |
 | Approve the 2.3 GB image build | yes | build, run, time 20 questions |
-| Privacy notice and its lawful basis | decide | draft it, not as legal advice |
+| Privacy notice: owner name, place, contact address, host | fill in the four placeholders | drafted (not legal advice) |
 | Everything else in 5.1 to 5.9 | | build, test, document |
 
 The order I would do it in: billing, then the measurements that wait for it (version-aware search, the one test-half read, the 20-question timing), then the image build, then hosting and CI, then the live link last.
