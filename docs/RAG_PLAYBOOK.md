@@ -198,6 +198,7 @@ Stated expectation (can be wrong): ...
 | Expected explanations that turned out wrong (Spanish gap) | testing three explanations | concluded "probably noise" |
 | CI red for three pushes in a row, unnoticed: tests needed NumPy, which CI (dev extras only) does not install, while everything passed locally | building a clean clone with only the dev extras, as CI does, and running the suite there | `available_backends()` lists NumPy only when it imports; NumPy-only tests skip without it |
 | The first deploy run failed in 2 seconds with no visible reason: the data bundle holds NOTICE, the checkout already has one, and `unzip` waited for an answer nobody could give | reading the step's exit code, then reproducing unzip with a closed input | `unzip -o`, the folder made first, the download by plain `curl`, and the listing printed in the log |
+| The Azure sign-in failed (AADSTS700213, no matching federated identity): GitHub presents the owner and repository by number as well as by name, so the plain-name subject the setup script registered matched nothing | the failed run's log prints the subject claim it presented | the script registers the exact subject (with the numbers), under a new credential name, and removes the old one; a test pins the subject |
 | The container built but failed at start-up (an unpinned `transformers` newer than the pinned PyTorch could run) | running the image, not just building it | version bound in the dependency list and a build-time import check |
 
 ## 14. A short checklist for your own RAG project

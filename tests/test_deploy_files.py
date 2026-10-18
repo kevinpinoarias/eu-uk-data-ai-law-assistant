@@ -143,6 +143,14 @@ def test_the_setup_script_reads_secrets_hidden_and_is_valid_shell():
     assert result.returncode == 0, result.stderr
 
 
+def test_the_sign_in_subject_is_the_one_github_actually_presents():
+    # GitHub presented the owner and repository by number as well as by name, and the plain-name subject the script
+    # first registered matched nothing (AADSTS700213 on the first real run). The numbers are part of the subject.
+    presented = "repo:kevinpinoarias@205836429/eu-uk-data-ai-law-assistant@1417480181:ref:refs/heads/main"
+    assert presented in SETUP
+    assert "repo:${GITHUB_REPO}:ref" not in SETUP  # the plain-name form that did not match
+
+
 def test_the_setup_script_limits_the_sign_in_to_this_repository_and_one_resource_group():
     assert "kevinpinoarias/eu-uk-data-ai-law-assistant" in SETUP
     assert "ref:refs/heads/main" in SETUP  # only the main branch can sign in

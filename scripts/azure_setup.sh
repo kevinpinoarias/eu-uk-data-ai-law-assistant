@@ -25,6 +25,11 @@ ENV_NAME="law-assistant-env"
 APP="law-assistant"
 REGISTRATION="law-assistant-deploy"
 GITHUB_REPO="kevinpinoarias/eu-uk-data-ai-law-assistant"
+# The subject GitHub Actions presents for runs on the main branch. GitHub names the owner and the repository by
+# number as well as by name, and Azure matches the subject exactly: the plain-name form
+# (repo:OWNER/REPO:ref:refs/heads/main) matched nothing on the first real run (error AADSTS700213). The numbers
+# are in the failed run's log ("subject claim"); a renamed or re-created repository has new ones.
+SUBJECT="repo:kevinpinoarias@205836429/eu-uk-data-ai-law-assistant@1417480181:ref:refs/heads/main"
 
 echo "== Registering the services (the first time this can take a few minutes)"
 az provider register --namespace Microsoft.App --wait
@@ -69,11 +74,14 @@ TENANT_ID="$(az account show --query tenantId --output tsv)"
 az role assignment create --assignee "$APP_ID" --role Contributor \
   --scope "/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}" --output none \
   || echo "(the role assignment already exists)"
+# An earlier version of this script registered the plain-name subject under the name github-main, which matches
+# nothing; remove it if it is there so only the working one remains.
+az ad app federated-credential delete --id "$APP_ID" --federated-credential-id github-main >/dev/null 2>&1 || true
 # Only this repository's main branch can sign in.
 az ad app federated-credential create --id "$APP_ID" --parameters "{
-  \"name\": \"github-main\",
+  \"name\": \"github-main-ids\",
   \"issuer\": \"https://token.actions.githubusercontent.com\",
-  \"subject\": \"repo:${GITHUB_REPO}:ref:refs/heads/main\",
+  \"subject\": \"${SUBJECT}\",
   \"audiences\": [\"api://AzureADTokenExchange\"]
 }" --output none || echo "(the federated credential already exists)"
 
