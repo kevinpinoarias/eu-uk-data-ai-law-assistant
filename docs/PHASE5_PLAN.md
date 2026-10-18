@@ -18,9 +18,9 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 | 5.1 Service layer | Built and tested |
 | 5.2 Privacy of the demo | Retention, warning and a bilingual notice built with the owner's details; open points listed in 5.2 |
 | 5.3 Web page | Built in English and Spanish, accessibility enforced by tests, checked in a browser |
-| 5.4 Container image | Built and run; healthy in 10 s, 1.5 GiB; model-key run pending |
+| 5.4 Container image | Built and run locally (10 s, 1.5 GiB); built and published in CI and deployed on 18 October 2026 |
 | 5.5 Continuous integration | Lint, tests, secret scan and a smoke test of the real server on a minimal install |
-| 5.6 Hosting | Not started (needs your account) |
+| 5.6 Hosting | Done on 18 October 2026: Azure Container Apps, UK South, closed behind an access code; cold start about 90 to 98 seconds |
 | 5.7 Traces and their report | Built and tested |
 | 5.8 Cost and budget | Tokens measured; price and budget alert need billing |
 | 5.9 Failure handling | Quota and error responses built; more to add |
@@ -83,7 +83,7 @@ Phases 1 to 4 built and measured the system. Phase 5 turns it into something a s
 ## 5.10 What "done" means for Phase 5
 
 1. The image builds, starts, and answers 20 different questions with the key supplied only as a hosting secret (not in the image or the repository).
-2. The test half has been read once and its numbers are in the README **before** the live link is, so the demo and the reported numbers are the same system. **Met on 16 October 2026** (P4.6): the numbers are negative and are in the README; any change to the router or the fine picker after this would make the deployed system differ from the measured one, so such a change must be labelled and measured on new questions before it is deployed.
+2. The test half has been read once and its numbers are in the README **before** the live link is, so the demo and the reported numbers are the same system. **Met on 16 October 2026** (P4.6): the numbers are negative and are in the README; any change to the router or the fine picker after this would make the deployed system differ from the measured one, so such a change must be labelled and measured on new questions before it is deployed. **Not held on 18 October 2026:** the general-terms answer for questions about the user's own situation (decision 124) was deployed before it was measured, so the deployed system differs from the measured one; the README says so, and a batch to score it is the next measurement.
 3. A budget alert exists and the daily cap is set from the measured cost.
 4. The privacy notice is on the page with the owner's details and the real host named (no start-up warning); traces are deleted after 30 days.
 5. The trace report shows median and 95th-percentile latency from real use.
