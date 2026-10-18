@@ -38,7 +38,20 @@ def test_a_vector_is_its_own_nearest_neighbour_in_every_available_backend():
         assert backend.search(VECTORS[42], 1) == [42], name
 
 
+def test_without_numpy_only_the_backends_that_can_be_built_are_listed(monkeypatch):
+    # CI installs only the dev extras, so NumPy is absent there; the list must not promise it.
+    import sys
+
+    monkeypatch.setitem(sys.modules, "numpy", None)  # makes `import numpy` raise ImportError
+    monkeypatch.setitem(sys.modules, "faiss", None)
+    monkeypatch.setitem(sys.modules, "sqlite_vec", None)
+    found = available_backends()
+    assert list(found) == ["python"]
+    assert found["python"](VECTORS).search(VECTORS[3], 1) == [3]
+
+
 def test_numpy_gives_the_same_ranking_as_the_python_scan():
+    pytest.importorskip("numpy")
     reference, numpy_scan = PythonScan(VECTORS), NumpyScan(VECTORS)
     for q in QUERIES:
         assert numpy_scan.search(q, 10) == reference.search(q, 10)
@@ -64,5 +77,6 @@ def test_the_approximate_index_finds_nearly_the_same_neighbours():
 
 
 def test_asking_for_more_than_exists_returns_what_exists():
-    assert len(NumpyScan(VECTORS[:3]).search(QUERIES[0], 10)) == 3
     assert len(PythonScan(VECTORS[:3]).search(QUERIES[0], 10)) == 3
+    pytest.importorskip("numpy")
+    assert len(NumpyScan(VECTORS[:3]).search(QUERIES[0], 10)) == 3

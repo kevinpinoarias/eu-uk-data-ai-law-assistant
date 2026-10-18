@@ -118,8 +118,14 @@ class SqliteVec:
 
 
 def available_backends() -> dict[str, Callable[[Sequence[Sequence[float]]], object]]:
-    """The backends that can be built here, by name. The pure-Python and NumPy ones always can."""
-    found: dict[str, Callable] = {"python": PythonScan, "numpy": NumpyScan}
+    """The backends that can be built here, by name. Pure Python always can; the rest need their package."""
+    found: dict[str, Callable] = {"python": PythonScan}
+    try:
+        import numpy  # noqa: F401
+
+        found["numpy"] = NumpyScan
+    except ImportError:
+        pass
     try:
         import faiss  # noqa: F401
 

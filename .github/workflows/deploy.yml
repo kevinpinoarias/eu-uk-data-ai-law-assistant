@@ -34,14 +34,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The bundle contains NOTICE, which the checkout already has: unzip must overwrite without asking (-o), or it
+      # waits for an answer nobody can give and the step fails.
       - name: Fetch and unpack the data bundle
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DATA_RELEASE: ${{ inputs.data_release }}
         run: |
-          gh release download "$DATA_RELEASE" --pattern data-bundle.zip --dir dist
-          unzip -q dist/data-bundle.zip -d .
+          mkdir -p dist
+          curl -fsSL --retry 3 -o dist/data-bundle.zip "https://github.com/${GITHUB_REPOSITORY}/releases/download/${DATA_RELEASE}/data-bundle.zip"
+          ls -l dist
+          unzip -q -o dist/data-bundle.zip -d .
           test -f data/indexes/bge-m3.f32 && test -d data/chunks
+          ls -l data/indexes
 
       - uses: docker/setup-buildx-action@v3
 

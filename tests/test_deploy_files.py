@@ -106,6 +106,18 @@ def test_the_app_stays_closed_to_visitors_without_the_code_and_cannot_scale_into
         assert setting in WORKFLOW, setting
 
 
+def test_the_bundle_is_fetched_with_plain_curl_into_a_folder_made_first_and_listed():
+    # The release is public, so no tool or token is needed; a missing folder or tool made the first run fail
+    # in two seconds with no visible reason, so the folder is made first and what arrived is listed in the log.
+    step = WORKFLOW.split("Fetch and unpack the data bundle")[1].split("docker/setup-buildx-action")[0]
+    assert step.index("mkdir -p dist") < step.index("curl ") < step.index("ls -l dist") < step.index("unzip ")
+    assert "releases/download/" in step and "gh release" not in step and "GH_TOKEN" not in step
+    assert "curl -fsSL" in step  # fail on an HTTP error, follow the redirect, stay quiet
+    # The bundle holds NOTICE and the checkout already has one: without -o, unzip stops to ask whether to
+    # overwrite it, and nobody can answer in CI (the first real run failed here).
+    assert "unzip -q -o" in step
+
+
 def test_the_setup_script_reads_secrets_hidden_and_is_valid_shell():
     import shutil
     import subprocess
