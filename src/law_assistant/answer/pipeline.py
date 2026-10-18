@@ -67,6 +67,16 @@ MESSAGES = {
         ),
         "sources": "Sources:",
         "disclaimer": "This explains what the text says; it is not legal advice.",
+        "advice_abstained": (
+            "I couldn't find enough in the texts I hold to give even general information about this. Try "
+            "asking what a specific law says about the topic, for example: “What does the GDPR say about "
+            "reusing personal data for a new purpose?”"
+        ),
+        "advice_notice": (
+            "General information only, not legal advice. Whether and how the law applies to you "
+            "depends on facts this assistant does not know. Please check with a qualified lawyer or "
+            "your data-protection authority before you act."
+        ),
         "caveat": "Note:",
     },
     "es": {
@@ -92,6 +102,16 @@ MESSAGES = {
         ),
         "sources": "Fuentes:",
         "disclaimer": "Esto explica lo que dice el texto; no es asesoramiento jurídico.",
+        "advice_abstained": (
+            "No he encontrado en los textos que tengo lo suficiente para darte ni siquiera información "
+            "general sobre esto. Prueba a preguntar qué dice una ley concreta sobre el tema, por ejemplo: "
+            "«¿Qué dice el RGPD sobre reutilizar datos personales para una nueva finalidad?»"
+        ),
+        "advice_notice": (
+            "Información general, no es asesoramiento jurídico. Que la ley te afecte y cómo depende de "
+            "hechos que este asistente no conoce. Consulta con un abogado cualificado o con tu "
+            "autoridad de protección de datos antes de actuar."
+        ),
         "caveat": "Nota:",
     },
 }
@@ -115,6 +135,8 @@ class Result:
     sources: list[Source] = field(default_factory=list)
     timings: dict[str, float] = field(default_factory=dict)
     trace: dict[str, Any] = field(default_factory=dict)
+    # Shown above the answer; set when a question about the user's own situation got a general answer.
+    notice: str | None = None
 
 
 def _fact_source_label(fact: Fact) -> list[Source]:
@@ -148,7 +170,18 @@ class AnswerPipeline:
         version_aware: bool = True,
         fallback_router=None,
         fallback_matcher=None,
+        advice_mode: str = "refuse",
+        advice_rewriter: Callable[[str], str] | None = None,
     ) -> None:
+        if advice_mode not in ("refuse", "general"):
+            raise ValueError(f"advice_mode must be 'refuse' or 'general', not {advice_mode!r}")
+        # What to do with a question the router calls a request for legal advice (about the user's own
+        # situation): "refuse" (the behaviour that was measured) or "general": search and explain in
+        # general terms what the texts say, never decide the case, and show a notice to see a professional.
+        self._advice_mode = advice_mode
+        self._advice_rewriter = (
+            advice_rewriter  # restates an advice question in the law's own words, for search
+        )
         self._router, self._picker, self._writer = router, picker, writer
         self._current, self._full, self._k, self._rewriter = current, full, k, rewriter
         self._original = original or full  # text before the 2026 amendment, for questions dated earlier
@@ -170,14 +203,17 @@ class AnswerPipeline:
         }
 
     def route(self, state: dict) -> dict:
+        extra: dict = {}
         try:
             r: Route = self._router.route(state["question"])
-            return {"route": r.route, "reason": r.reason}
         except LLMError:
             if self._fallback_router is None:
                 raise
-        r = self._fallback_router.route(state["question"])
-        return {"route": r.route, "reason": r.reason, "degraded": True}
+            r = self._fallback_router.route(state["question"])
+            extra = {"degraded": True}
+        if r.route == "refuse" and r.reason == "legal_advice" and self._advice_mode == "general":
+            return {"route": "retrieve", "reason": r.reason, "advice": True, **extra}
+        return {"route": r.route, "reason": r.reason, **extra}
 
     def lookup(self, state: dict) -> dict:
         degraded = state.get("degraded", False)
@@ -208,6 +244,10 @@ class AnswerPipeline:
         query = state["question"]
         if self._rewriter:
             query = f"{query}\n{self._rewriter(state['question'])}"
+        if state.get("advice") and self._advice_rewriter:
+            restated = self._advice_rewriter(state["question"])
+            if restated:
+                query = f"{query}\n{restated}"
         as_of = state["as_of"]
         if as_of and as_of < AS_OF_CUTOFF:
             retriever = self._original if self._version_aware else self._full
@@ -221,9 +261,12 @@ class AnswerPipeline:
     def generate(self, state: dict) -> dict:
         if not state["passages"]:
             return {"draft": None}
+        # `advice` is passed only in advice mode, so a writer without the option and every earlier call
+        # are unchanged.
+        extra = {"advice": True} if state.get("advice") else {}
         try:
             draft = self._writer.write(
-                state["question"], state["language"], state["passages"], as_of=state["as_of"]
+                state["question"], state["language"], state["passages"], as_of=state["as_of"], **extra
             )
         except LLMError:
             if not self._degrade:
@@ -243,7 +286,8 @@ class AnswerPipeline:
             return {"result": self._passages_only(state)}
         verification = state.get("verification")
         if verification is None or not verification.valid:
-            return {"result": Result("abstained", MESSAGES[lang]["abstained"], lang, "retrieve")}
+            message = MESSAGES[lang]["advice_abstained" if state.get("advice") else "abstained"]
+            return {"result": Result("abstained", message, lang, "retrieve", notice=self._notice(state))}
         sources = [
             Source(source_label(v.chunk), v.chunk.id, v.quote, v.chunk.provision_ids)
             for v in verification.valid
@@ -262,7 +306,10 @@ class AnswerPipeline:
             lines.append(f"- {source_label(c)}: {snippet}")
             sources.append(Source(source_label(c), c.id, None, c.provision_ids))
         lines += ["", MESSAGES[lang]["disclaimer"]]
-        return Result("sources", "\n".join(lines), lang, "retrieve", None, sources)
+        return Result(
+            "sources", "\n".join(lines), lang, "retrieve", self._advice_reason(state), sources,
+            notice=self._notice(state),
+        )  # fmt: skip
 
     # ----------------------------------------------------------------- wiring
     def _render(self, kind: str, body: str, state: dict, sources: list[Source]) -> Result:
@@ -271,7 +318,18 @@ class AnswerPipeline:
         for s in sources:
             lines.append(f"- {s.label}" + (f": “{s.quote}”" if s.quote else ""))
         lines += ["", MESSAGES[lang]["disclaimer"]]
-        return Result(kind, "\n".join(lines), lang, "table" if kind == "table" else "retrieve", None, sources)
+        return Result(
+            kind, "\n".join(lines), lang, "table" if kind == "table" else "retrieve",
+            self._advice_reason(state), sources, notice=self._notice(state),
+        )  # fmt: skip
+
+    @staticmethod
+    def _notice(state: dict) -> str | None:
+        return MESSAGES[state["language"]]["advice_notice"] if state.get("advice") else None
+
+    @staticmethod
+    def _advice_reason(state: dict) -> str | None:
+        return "legal_advice" if state.get("advice") else None
 
     def nodes(self) -> dict[str, Callable[[dict], dict]]:
         return {
@@ -320,6 +378,7 @@ class AnswerPipeline:
             "fact_key": state["fact"].key if state.get("fact") else None,
             "fell_back_from_table": state.get("fell_back", False),
             "degraded": state.get("degraded", False),
+            "advice": state.get("advice", False),
             "passages": [c.id for c in state.get("passages", [])],
             "enough_evidence": state["draft"].enough_evidence if state.get("draft") else None,
             "invalid_citations": verification.invalid if verification else [],

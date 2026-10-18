@@ -25,6 +25,7 @@ class State(TypedDict, total=False):
     wants_original: bool
     route: str
     reason: str | None
+    advice: bool
     fact: Any
     fell_back: bool
     degraded: bool

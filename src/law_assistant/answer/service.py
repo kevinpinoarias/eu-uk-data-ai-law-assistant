@@ -98,6 +98,7 @@ class AskService:
             "language": result.language,
             "answer": result.text,
             "sources": [{"label": s.label, "quote": s.quote} for s in result.sources],
+            "notice": result.notice,
             "seconds": seconds,
         }
 

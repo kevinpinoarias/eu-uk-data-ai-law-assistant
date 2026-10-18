@@ -68,12 +68,25 @@ DATE_INSTRUCTIONS = (
 )
 
 
-def answer_instructions(include_dates: bool = False) -> str:
-    """The standing rules; with `include_dates` the in-force-date rule is added before the reply format."""
-    if not include_dates:
+ADVICE_INSTRUCTIONS = (
+    "Special case: the user is asking about their own plan or situation. Do not decide it for them: do "
+    "not say what they should do and do not answer yes or no to whether they may. Explain in general "
+    "terms what the passages say that bears on the question, in conditional form (for example 'if the "
+    "data are personal data, ...'), and say briefly what the answer depends on (the kind of data, the "
+    "purpose, who the parties are, the country). Do not write the document, policy or text they ask "
+    "for; explain what the passages require of it. Every statement still needs a citation.\n"
+)
+
+
+def answer_instructions(include_dates: bool = False, advice: bool = False) -> str:
+    """The standing rules. With `include_dates` the in-force-date rule is added, and with `advice` the
+    rule for a question about the user's own situation, both before the reply format. With neither it
+    is the text that was measured."""
+    if not include_dates and not advice:
         return ANSWER_INSTRUCTIONS
     head, tail = ANSWER_INSTRUCTIONS.split("Reply with JSON only", 1)
-    return head + DATE_INSTRUCTIONS + "Reply with JSON only" + tail
+    extra = (DATE_INSTRUCTIONS if include_dates else "") + (ADVICE_INSTRUCTIONS if advice else "")
+    return head + extra + "Reply with JSON only" + tail
 
 
 def describe_date(iso: str) -> str:
@@ -116,7 +129,13 @@ class AnswerWriter:
         self._generator, self._max, self._include_dates = generator, max_output_tokens, include_dates
 
     def write(
-        self, question: str, language: str, chunks: Sequence[Chunk], *, as_of: str | None = None
+        self,
+        question: str,
+        language: str,
+        chunks: Sequence[Chunk],
+        *,
+        as_of: str | None = None,
+        advice: bool = False,
     ) -> Draft:
         when = f"the law as it stood on {as_of}" if as_of else "the current law"
         prompt = (
@@ -127,7 +146,7 @@ class AnswerWriter:
         )
         reply = self._generator.generate(
             prompt,
-            system=answer_instructions(self._include_dates),
+            system=answer_instructions(self._include_dates, advice),
             temperature=0.0,
             max_output_tokens=self._max,
             json_output=True,

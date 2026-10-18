@@ -10,8 +10,10 @@ import json
 import pytest
 
 from law_assistant.answer.generate import (
+    ADVICE_INSTRUCTIONS,
     ANSWER_INSTRUCTIONS,
     AnswerWriter,
+    answer_instructions,
     describe_version,
     format_passages,
     parse_draft,
@@ -144,3 +146,44 @@ def test_the_writer_passes_the_option_on_and_the_instructions_explain_the_date_h
     plain = FakeGenerator(reply)
     AnswerWriter(plain).write("Since when?", "en", [dated])
     assert plain.calls[0][1]["system"] == ANSWER_INSTRUCTIONS
+
+
+class RecordingGenerator:
+    def __init__(self):
+        self.calls = []
+
+    def generate(self, prompt, **kwargs):
+        self.calls.append((prompt, kwargs))
+        return json.dumps({"enough_evidence": True, "answer": "x", "citations": []})
+
+
+def test_advice_mode_adds_a_rule_to_explain_in_general_terms_and_not_to_decide_or_draft():
+    text = ADVICE_INSTRUCTIONS.lower()
+    for phrase in (
+        "own plan or situation",
+        "do not decide",
+        "yes or no",
+        "general terms",
+        "depends on",
+        "do not write",
+    ):
+        assert phrase in text, phrase
+    full = answer_instructions(advice=True)
+    assert ADVICE_INSTRUCTIONS in full and full.rstrip().endswith("}.")  # before the reply format, not after
+    assert "Reply with JSON only" in full and full.index(ADVICE_INSTRUCTIONS) < full.index(
+        "Reply with JSON only"
+    )
+
+
+def test_the_default_instructions_are_untouched_so_cached_answers_and_earlier_results_stay_valid():
+    assert answer_instructions() == ANSWER_INSTRUCTIONS
+    gen = RecordingGenerator()
+    AnswerWriter(gen).write("Do I need consent?", "en", [chunk("c1", "x")])
+    assert gen.calls[0][1]["system"] == ANSWER_INSTRUCTIONS
+
+
+def test_the_writer_sends_the_advice_rule_only_when_asked_to():
+    gen = RecordingGenerator()
+    AnswerWriter(gen).write("Can I?", "en", [chunk("c1", "x")], advice=True)
+    assert ADVICE_INSTRUCTIONS in gen.calls[0][1]["system"]
+    assert "Do not add anything from memory" in gen.calls[0][1]["system"]  # the grounding rules stay

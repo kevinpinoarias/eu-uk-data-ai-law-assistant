@@ -62,14 +62,18 @@ class FakeRetriever:
 
 class FakeWriter:
     def __init__(self, draft):
-        self.draft, self.calls = draft, []
+        self.draft, self.calls, self.advice = draft, [], []
 
-    def write(self, question, language, chunks, *, as_of=None):
+    def write(self, question, language, chunks, *, as_of=None, advice=False):
         self.calls.append((question, language, [c.id for c in chunks], as_of))
+        self.advice.append(advice)
         return self.draft
 
 
-def pipeline(route=None, draft=None, fact=FACT, current=None, full=None, original=None, k=5):
+def pipeline(
+    route=None, draft=None, fact=FACT, current=None, full=None, original=None, k=5, advice_mode="refuse",
+    writer=None, fallback_router=None, advice_rewriter=None,
+):  # fmt: skip
     draft = draft or Draft(True, "Consent is needed.", [Citation(1, "has given consent")])
     parts = {
         "router": FakeRouter(route or Route("retrieve")),
@@ -77,11 +81,12 @@ def pipeline(route=None, draft=None, fact=FACT, current=None, full=None, origina
         "current": current or FakeRetriever(["c1"], "current"),
         "full": full or FakeRetriever(["c2", "c1"], "full"),
         "original": original or FakeRetriever(["c2"], "original"),
-        "writer": FakeWriter(draft),
+        "writer": writer or FakeWriter(draft),
     }
     p = AnswerPipeline(
         router=parts["router"], picker=parts["picker"], current=parts["current"], full=parts["full"],
-        original=parts["original"], writer=parts["writer"], chunks=CHUNKS, k=k,
+        original=parts["original"], writer=parts["writer"], chunks=CHUNKS, k=k, advice_mode=advice_mode,
+        fallback_router=fallback_router, advice_rewriter=advice_rewriter,
     )  # fmt: skip
     return p, parts
 
@@ -130,6 +135,114 @@ def test_a_refusal_for_advice_is_in_the_questions_language():
     p, _ = pipeline(route=Route("refuse", "legal_advice"))
     result = p.ask("¿Es legal mi tienda online? Ayer perdimos datos.")
     assert result.kind == "refused" and "abogado" in result.text
+
+
+ADVICE = Route("refuse", "legal_advice")
+
+
+def test_by_default_a_request_for_advice_is_still_refused_so_earlier_measurements_can_be_reproduced():
+    p, parts = pipeline(route=ADVICE)
+    result = p.ask("Can I use customer data to train a model?")
+    assert result.kind == "refused" and result.notice is None and parts["writer"].calls == []
+
+
+def test_in_general_mode_a_request_for_advice_gets_an_answer_from_the_texts_with_a_notice():
+    p, parts = pipeline(route=ADVICE, advice_mode="general")
+    result = p.ask("Can I use customer data to train a model?")
+    assert result.kind == "answer" and result.text.startswith("Consent is needed.")
+    assert result.notice and "not legal advice" in result.notice.lower() and "lawyer" in result.notice
+    assert parts["writer"].advice == [True]  # the writer is told to explain in general terms, not to decide
+    assert result.reason == "legal_advice" and result.sources  # the quotations are still checked and shown
+
+
+def test_the_notice_is_in_the_questions_language():
+    p, _ = pipeline(route=ADVICE, advice_mode="general")
+    result = p.ask("¿Puedo usar los datos de mis clientes para entrenar un modelo?")
+    assert (
+        result.language == "es"
+        and "abogado" in result.notice
+        and "no es asesoramiento" in result.notice.lower()
+    )
+
+
+def test_an_ordinary_answer_carries_no_notice_and_the_writer_is_not_asked_for_advice_mode():
+    p, parts = pipeline(advice_mode="general")
+    result = p.ask("Do I need consent?")
+    assert result.notice is None and parts["writer"].advice == [False]
+
+
+def test_other_refusals_stay_refusals_in_general_mode():
+    p, parts = pipeline(route=Route("refuse", "out_of_corpus"), advice_mode="general")
+    result = p.ask("What does the CCPA say?")
+    assert result.kind == "refused" and result.notice is None and parts["writer"].calls == []
+
+
+def test_an_unsupported_advice_answer_still_abstains_and_still_carries_the_notice():
+    p, _ = pipeline(
+        route=ADVICE,
+        advice_mode="general",
+        draft=Draft(True, "Made up.", [Citation(1, "words that are not there")]),
+    )
+    result = p.ask("Can I use customer data to train a model?")
+    assert result.kind == "abstained" and result.notice
+
+
+def test_with_the_model_down_the_passages_are_shown_with_the_notice():
+    p, _ = pipeline(
+        route=ADVICE, advice_mode="general", writer=DownWriter(), fallback_router=FakeRouter(ADVICE)
+    )
+    result = p.ask("Can I use customer data to train a model?")
+    assert result.kind == "sources" and result.notice and result.sources
+
+
+def test_an_advice_question_is_searched_with_its_restatement_added_and_an_ordinary_one_is_not():
+    seen = []
+
+    def rewrite(q):
+        seen.append(q)
+        return "What does the GDPR say about further processing?"
+
+    current = FakeRetriever(["c1"], "current")
+    p, _ = pipeline(route=ADVICE, advice_mode="general", current=current, advice_rewriter=rewrite)
+    p.ask("Can I reuse my customers' data?")
+    assert seen == ["Can I reuse my customers' data?"]
+    assert (
+        current.asked[0][0]
+        == "Can I reuse my customers' data?\nWhat does the GDPR say about further processing?"
+    )
+
+    current2 = FakeRetriever(["c1"], "current")
+    p2, _ = pipeline(advice_mode="general", current=current2, advice_rewriter=rewrite)
+    p2.ask("Do I need consent?")
+    assert current2.asked[0][0] == "Do I need consent?" and seen == ["Can I reuse my customers' data?"]
+
+
+def test_an_empty_restatement_leaves_the_question_alone():
+    current = FakeRetriever(["c1"], "current")
+    p, _ = pipeline(route=ADVICE, advice_mode="general", current=current, advice_rewriter=lambda q: "")
+    p.ask("Can I reuse my customers' data?")
+    assert current.asked[0][0] == "Can I reuse my customers' data?"
+
+
+def test_when_an_advice_question_cannot_be_supported_the_reply_suggests_how_to_ask_it():
+    p, _ = pipeline(route=ADVICE, advice_mode="general", draft=Draft(False, "Not covered.", []))
+    result = p.ask("Can I reuse my customers' data?")
+    assert result.kind == "abstained" and result.notice
+    assert "what a specific law says" in result.text and "GDPR" in result.text
+    es, _ = pipeline(route=ADVICE, advice_mode="general", draft=Draft(False, "No cubierto.", []))
+    reply = es.ask("¿Puedo reutilizar los datos de mis clientes?")
+    assert "qué dice una ley concreta" in reply.text
+    plain, _ = pipeline(draft=Draft(False, "Not covered.", []))
+    assert (
+        "what a specific law says" not in plain.ask("Something unrelated?").text
+    )  # ordinary reply unchanged
+
+
+def test_the_trace_shows_that_a_question_was_handled_in_advice_mode():
+    p, _ = pipeline(route=ADVICE, advice_mode="general")
+    result = p.ask("Can I use customer data to train a model?")
+    assert result.trace["route"] == "retrieve" and result.trace["reason"] == "legal_advice"
+    assert result.trace["advice"] is True
 
 
 def test_when_the_model_says_the_passages_do_not_answer_the_pipeline_abstains():

@@ -28,8 +28,9 @@
   .topbar span { color: var(--muted); font-size: .9rem; }
   h1 { font-size: 1.45rem; margin: 0 0 .25rem; }
   .sub { color: var(--muted); margin: 0 0 1rem; }
-  .note { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px;
-          padding: .6rem .8rem; font-size: .92rem; margin-bottom: 1rem; }
+  .note, .notice { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px;
+          padding: .6rem .8rem; font-size: .92rem; margin: 0 0 1rem; }
+  .notice { margin: 0 0 .8rem; }
   label { display: block; font-weight: 600; margin-bottom: .35rem; }
   textarea { width: 100%; min-height: 6rem; padding: .6rem .7rem; font: inherit; color: var(--ink);
              background: var(--card); border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
@@ -236,6 +237,14 @@
       p.setAttribute("role", "alert");
       card.appendChild(p);
     } else {
+      // A question about the user's own situation is answered in general terms; the server's notice (in the
+      // answer's language) says so and points to a professional, above the answer where it is read first.
+      if (data.notice) {
+        var note = el("p", "notice", data.notice);
+        note.setAttribute("role", "note");
+        note.lang = data.language;
+        card.appendChild(note);
+      }
       var answer = el("div", "answer");
       var main = data.answer.split("\n\nSources:")[0].split("\n\nFuentes:")[0];
       main.split("\n\n").forEach(function (para) { answer.appendChild(el("p", "", para)); });

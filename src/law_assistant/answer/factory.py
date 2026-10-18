@@ -11,6 +11,7 @@ the shipped default is the configuration that was measured.
 from __future__ import annotations
 
 from law_assistant import settings
+from law_assistant.answer.advice import AdviceRewriter
 from law_assistant.answer.facts_lookup import FactMatcher, LLMFactPicker
 from law_assistant.answer.generate import AnswerWriter
 from law_assistant.answer.pipeline import AnswerPipeline
@@ -24,7 +25,12 @@ from law_assistant.retrieval.policies import CollapsedRetriever, before_amendmen
 
 
 def build_pipeline(
-    *, k: int = 5, version_aware: bool = False, include_dates: bool = False, device: str | None = None
+    *,
+    k: int = 5,
+    version_aware: bool = False,
+    include_dates: bool = False,
+    device: str | None = None,
+    advice_mode: str = "refuse",
 ):
     """Return (pipeline, generator); the generator is returned so callers can read tokens and timings."""
     import torch
@@ -55,6 +61,8 @@ def build_pipeline(
         chunks=chunks,
         k=k,
         version_aware=version_aware,
+        advice_mode=advice_mode,
+        advice_rewriter=AdviceRewriter(generator) if advice_mode == "general" else None,
         # Degraded mode (decision 103): used only when the language model cannot be reached.
         fallback_router=RuleRouter(),
         fallback_matcher=FactMatcher(facts, embedder.embed_texts, threshold=0.65),

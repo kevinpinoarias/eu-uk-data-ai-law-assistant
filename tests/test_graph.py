@@ -33,3 +33,11 @@ def test_the_graph_has_a_node_for_every_step():
     p, _ = pipeline()
     nodes = set(build_graph(p).get_graph().nodes)
     assert set(p.nodes()) <= nodes
+
+
+def test_the_graph_handles_a_request_for_advice_in_general_mode_like_the_plain_loop():
+    p, _ = pipeline(route=Route("refuse", "legal_advice"), advice_mode="general")
+    plain = p.ask("Can I use customer data to train a model?")
+    graphed = ask_with_graph(p, "Can I use customer data to train a model?")
+    assert plain.kind == "answer" and plain.notice
+    assert (graphed.kind, graphed.text, graphed.notice) == (plain.kind, plain.text, plain.notice)

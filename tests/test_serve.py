@@ -140,3 +140,24 @@ def test_the_server_never_reads_or_logs_a_visitors_address(server, capsys):
     ask_with_code(server, None)
     call(f"{server}/")
     assert "127.0.0.1" not in capsys.readouterr().err  # the request log has no address either
+
+
+def test_the_real_pipeline_gets_the_advice_rewriter_only_in_general_mode():
+    import inspect
+
+    from law_assistant.answer import factory
+
+    source = inspect.getsource(factory.build_pipeline)
+    assert 'advice_rewriter=AdviceRewriter(generator) if advice_mode == "general" else None' in source
+
+
+def test_the_live_server_answers_advice_questions_in_general_terms_and_can_be_switched_back():
+    import inspect
+
+    from law_assistant import serve
+    from law_assistant.answer.factory import build_pipeline
+
+    source = inspect.getsource(serve.main)
+    assert 'advice_mode="refuse" if "--refuse-advice" in argv else "general"' in source
+    # the factory itself keeps the measured behaviour, so experiments that build the pipeline reproduce earlier results
+    assert inspect.signature(build_pipeline).parameters["advice_mode"].default == "refuse"

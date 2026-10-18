@@ -17,6 +17,9 @@ Asking a question can be restricted to people who hold an access code: set ACCES
 (from the link's fragment, which a browser never sends to a server) in the X-Access-Code header. The pages and
 the health check stay open. With no ACCESS_CODE the server answers anyone, which is right for a local run.
 The total limits are QUESTIONS_PER_MINUTE (default 10) and QUESTIONS_PER_DAY (default 300).
+
+A question about the user's own situation is answered in general terms from the texts, with a notice to see a
+professional (decision 124); `--refuse-advice` restores the earlier behaviour of refusing it.
 """
 
 from __future__ import annotations
@@ -144,7 +147,9 @@ def main(argv: list[str]) -> int:
         from law_assistant.answer.factory import build_pipeline
 
         pipeline, _ = build_pipeline(
-            version_aware="--version-aware" in argv, include_dates="--with-dates" in argv
+            version_aware="--version-aware" in argv,
+            include_dates="--with-dates" in argv,
+            advice_mode="refuse" if "--refuse-advice" in argv else "general",
         )
     retention = int(os.environ.get("TRACE_RETENTION_DAYS", str(DEFAULT_RETENTION_DAYS)))
     trace = TraceLog(

@@ -95,6 +95,7 @@ A data-protection assistant should hold as little as it can, so the demo is buil
 
 - **What it sends away.** The question you type goes to Google's Gemini API to produce the answer, so please do not type personal data. The Gemini terms read at the start of the project require the paid tier for a public UK or EEA demo (the free tier may use content to improve Google's products); the development experiments used the free tier with the gold questions only, which contain no personal data. Re-read the current wording before any launch.
 - **What it keeps.** The server never reads or stores a visitor's address, and the logs hold no question text: a row has only the route, outcome, passage ids and timings, deleted after 30 days. Its limits count questions in total, not per visitor.
+- **A question about your own situation** is answered in general terms from the texts, never decided, with a notice that it is general information and not legal advice and to see a professional (decision 124); it is unmeasured, and on vague wording it may say it cannot find enough.
 - **Who can ask.** Setting `ACCESS_CODE` restricts questions to people who hold the invited link (`https://HOST/#code=...`; the part after `#` never reaches a server).
 - **What it does not control.** The host's own infrastructure (Microsoft Azure) sees connecting addresses and may keep its own logs. Whether the UK data-protection fee or an EU representative applies to the owner is not settled (decision 120).
 

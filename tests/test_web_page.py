@@ -93,6 +93,17 @@ def test_the_page_takes_an_access_code_from_the_link_fragment_and_sends_it_in_a_
     assert "status === 401" in script  # a refused visitor sees the plain message, in their language
 
 
+def test_the_page_shows_the_servers_notice_above_an_answer_given_in_general_terms():
+    # For a question about the user's own situation the server answers in general terms and sends a notice
+    # (general information, not legal advice, see a professional); the page must show it, announced, above the answer.
+    script = PAGE.split("<script>")[-1]
+    assert "data.notice" in script
+    assert (
+        re.search(r'el\("p",\s*"notice"', script) or 'className = "notice"' in script or '"notice"' in script
+    )
+    assert ".notice" in PAGE.split("<style>")[1].split("</style>")[0]  # and it is styled
+
+
 def test_the_footer_says_the_question_text_and_the_address_are_not_kept():
     for lang in ("en", "es"):
         text = dictionary()[lang]["privacy"]

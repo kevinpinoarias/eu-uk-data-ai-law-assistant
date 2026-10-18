@@ -192,3 +192,13 @@ def test_a_running_log_deletes_old_traces_by_itself_at_most_once_an_hour(tmp_pat
     log.record({"id": "third"})  # more than an hour: the old row goes again
     ids = [json.loads(line)["id"] for line in path.read_text(encoding="utf-8").splitlines()]
     assert "old" not in ids and ids[-1] == "third"
+
+
+def test_the_json_carries_the_notice_only_for_answers_given_in_advice_mode():
+    plain, _ = service()
+    assert plain.ask({"question": "Do I need consent?"})[1]["notice"] is None
+    advice = result()
+    advice.notice = "General information, not legal advice. Please consult a qualified lawyer."
+    svc, _ = service(FakePipeline(res=advice))
+    status, body = svc.ask({"question": "Can I use data to train a model?"})
+    assert status == 200 and body["notice"].startswith("General information")
