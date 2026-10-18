@@ -44,6 +44,12 @@ Generated from the git history by `scripts/make_chronology.py`; regenerate after
 | 38 | 2026-10-16 12:32 | `4d94b57` | Log P4.6: the answer layer on the sealed test half did not beat memory |
 | 39 | 2026-10-16 12:32 | `70075f9` | Regenerate the chronology |
 | 40 | 2026-10-16 13:49 | `ce80ad0` | Add deploy prep and routing-fix candidates: cold-start notice, data bundle, deploy workflow, batch C |
+| 41 | 2026-10-16 13:50 | `7cae7a0` | Regenerate the chronology |
+| 42 | 2026-10-16 16:31 | `fbf0edb` | Hold nothing that identifies a visitor, add an access code, and settle on Azure for hosting |
+| 43 | 2026-10-18 14:14 | `4c1f586` | Fix the red CI run and the first deploy failure |
+| 44 | 2026-10-18 14:25 | `39bcfd5` | Register the sign-in subject GitHub actually presents |
+| 45 | 2026-10-18 15:09 | `ea90739` | Answer questions about the user's own situation in general terms, with a notice |
+| 46 | 2026-10-18 16:08 | `53d6768` | Update the README and the plans to say the demo is deployed, and what differs from what was measured |
 
 ## What each commit said
 
@@ -608,3 +614,42 @@ interview questions, chronology; README and DEPLOYMENT notes updated.
 - Router V2, picker V2 and a GDPR fine-tier scope overlay as options; defaults unchanged (decision 116).
 - Batch C: 37 frozen unseen routing questions (decision 117); the C1 comparison is pre-registered and was stopped by the free model quota.
 - Docs: decisions 116-120 (ICO fee and EU representative findings, owner decision pending), JOURNEY, DEPLOYMENT (free-tier terms, hosting options, owner steps), README, EXPERIMENT_INDEX.
+
+### 42. `fbf0edb` Hold nothing that identifies a visitor, add an access code, and settle on Azure for hosting
+
+- the server never reads the connecting address; limits count questions in total (decision 121)
+- trace rows hold route, outcome, passage ids and timings, not question text
+- optional ACCESS_CODE, carried in the link fragment so it never reaches a server
+- privacy notice and page footer updated in both languages, tied to the code by tests
+- deploy workflow re-asserts port, replica limits and secret references on every deploy;
+  scripts/azure_setup.sh for Cloud Shell (decisions 122 and 123)
+- README privacy section; DEPLOYMENT, PHASE5_PLAN and JOURNEY updated
+
+### 43. `4c1f586` Fix the red CI run and the first deploy failure
+
+- CI had failed on the last three pushes: three tests needed NumPy, which CI (dev extras only) does not install. available_backends() now lists NumPy only when it imports, and the NumPy-only tests skip without it. Reproduced in a clean clone with only the dev extras, which now passes (623 passed, 112 skipped).
+- The first Deploy run failed in two seconds at "Fetch and unpack the data bundle": the bundle contains NOTICE, the checkout already has one, and unzip without -o waits for an answer nobody can give. Now unzip -o, the folder made first, the download by plain curl (the release is public), and a listing printed in the log. Tests cover each.
+- RAG_PLAYBOOK: both mistakes recorded with how they were caught.
+
+### 44. `39bcfd5` Register the sign-in subject GitHub actually presents
+
+The second real Deploy run got through the bundle download, the image build and the push, then failed at the Azure sign-in with AADSTS700213: GitHub presents the owner and repository by number as well as by name (repo:kevinpinoarias@205836429/eu-uk-data-ai-law-assistant@1417480181:ref:refs/heads/main) and the setup script had registered the plain-name subject, which matches nothing. The script now registers the exact subject under a new credential name (github-main-ids) and removes the old one; a test pins the subject. The failure and the fix are recorded in the playbook and the deployment notes.
+
+### 45. `ea90739` Answer questions about the user's own situation in general terms, with a notice
+
+A question the router calls a request for legal advice is no longer refused by the live service. It is searched and answered in general terms from the texts, never deciding the case, every quotation still checked, and shown with a notice in the answer's language: general information, not legal advice, see a qualified lawyer or your data-protection authority (decision 124).
+
+- Writer: an extra rule only in this mode (explain in general terms, conditionally, say what it depends on, do not decide or draft); the default instructions are unchanged, so earlier measurements and cached answers stay valid.
+- Search: for these questions the model first restates the question as a general one in the law's own vocabulary and the search uses both (answer/advice.py). On four diagnostic questions two got a verified answer; before, none of three did.
+- When nothing can be supported, the reply suggests how to ask it (English and Spanish).
+- Page: the server's notice is shown above the answer; the service JSON carries it.
+- The live server uses the mode by default (--refuse-advice reverts); the library default stays refuse so experiments reproduce.
+- Unmeasured and tuned on those examples, none from the sealed half: no accuracy claim; recorded in decision 124, the journey, the answer-layer notes and the README.
+
+### 46. `53d6768` Update the README and the plans to say the demo is deployed, and what differs from what was measured
+
+- README status: deployed as a closed demo on Azure Container Apps behind an access code (no public link), with the test-half results unchanged, and one stated difference between the measured and the deployed system: questions about the user's own situation are answered in general terms with a notice (decision 124, unmeasured).
+- ROADMAP: Phase 5 moves to done; what is left is listed; the "refuses legal advice by design" line is corrected; a known limit records the unmeasured mode and the fragility of search to wording.
+- PHASE5_PLAN: container and hosting rows updated; the done criterion about not changing the system after measuring is marked as not held on 18 October, with the reason.
+- DEPLOYMENT: the step list becomes a record of what was done and what is still open.
+- JOURNEY: where we are now.
