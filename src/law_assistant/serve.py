@@ -119,7 +119,11 @@ def make_handler(service: AskService, access_code: str | None = None):
             )  # read before any refusal: replying with unread data can reset the connection
             if not allowed(self.headers.get("X-Access-Code")):
                 self._json(
-                    401, {"error": "An access code is needed to ask questions. Use the link you were given."}
+                    401,
+                    {
+                        "error": "An access code is needed to ask questions. "
+                        "Use the link you were given or ask the owner for one."
+                    },
                 )
                 return
             try:

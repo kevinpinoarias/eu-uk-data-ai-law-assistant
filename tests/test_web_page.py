@@ -87,6 +87,12 @@ def test_the_page_takes_an_access_code_from_the_link_fragment_and_sends_it_in_a_
     d = dictionary()
     assert d["en"]["accessNeeded"] and d["es"]["accessNeeded"]
     assert "access code" in d["en"]["accessNeeded"].lower() and "código" in d["es"]["accessNeeded"]
+    # A visitor who arrives without the invited link (the address is public) is told where to ask for one.
+    assert (
+        "ask the owner" in d["en"]["accessNeeded"].lower()
+        and "privacy notice" in d["en"]["accessNeeded"].lower()
+    )
+    assert "aviso de privacidad" in d["es"]["accessNeeded"].lower()
     script = PAGE.split("<script>")[-1]
     assert "window.location.hash" in script and "sessionStorage" in script and "X-Access-Code" in script
     assert "replaceState" in script  # the code is taken out of the address bar and the history

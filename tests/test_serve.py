@@ -116,6 +116,7 @@ def test_a_refusal_reads_the_body_first_so_the_client_always_receives_it(closed_
 def test_a_refused_visitor_gets_a_plain_message_and_costs_nothing(closed_server):
     status, _, body = ask_with_code(closed_server, "wrong")
     assert status == 401 and "access code" in json.loads(body)["error"].lower()
+    assert "ask the owner" in json.loads(body)["error"].lower()
     assert "wrong" not in json.loads(body)["error"] and "let-me-in" not in body.decode()
 
 

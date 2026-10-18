@@ -84,3 +84,4 @@ The service needs about 1.5 GiB of memory because BGE-M3 runs on the server's CP
 5. **A screen-reader pass** on the page (NVDA is free on Windows): listen for whether a result is announced once or twice.
 6. **The wake-up message.** The first request after a quiet spell took 91 to 98 seconds here; the page says "up to a minute".
 7. Keep the **package public** on GitHub, or a new deploy cannot pull the image.
+8. **Opening the demo to everyone** (later): remove the `ACCESS_CODE` secret and redeploy, after the ICO and EU-representative decisions, the Gemini billing choice and a look at the daily cap (decision 125). The address is already in the README, with the note that a code is needed.
